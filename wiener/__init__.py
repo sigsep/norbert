@@ -62,13 +62,24 @@ class BandwidthLimiter(object):
 
 
 class ImageEncoder(object):
-    def __init__(self, format='jpg', quality=75):
+    def __init__(self, format='jpg', quality=75, qtable=None):
         self.format = format
         self.quality = quality
+        if qtable is not None:
+            self.qtables = [qtable]
+        else:
+            self.qtables = None
 
     def encode(self, X, out=None):
         if out is not None:
-            imageio.imwrite(out, X, format=self.format, quality=self.quality)
+            imageio.imwrite(
+                out,
+                X,
+                format=self.format,
+                quality=self.quality,
+                optimize=True,
+                qtables=self.qtables
+            )
 
     def decode(self, buf):
         img = imageio.imread(buf)
