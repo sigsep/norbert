@@ -1,4 +1,4 @@
-# wiener
+#  :hotdog:
 
 ## Installation
 
@@ -9,16 +9,17 @@ pipenv install
 ## Usage
 
 ```python
-audio, rate = sf.read(args.input)
+audio, rate = sf.read(audio)
+# convert to mono
 audio = audio[:, 0]
-sf.write("original.wav", audio, rate)
 
+# set up modules
 tf = wi.TF()
 bw = wi.BandwidthLimiter(bandwidth=16000)
 qt = wi.Quantizer()
 im = wi.ImageEncoder(format='jpg', quality=25, qtable=qtable)
 
-# forward path
+# # forward transforms
 # complex spectrogram
 Xc = tf(audio)
 # limit spectrogram to 16Khz
@@ -27,7 +28,7 @@ Xl = bw(Xc)
 Xq = qt(Xl)
 im(Xq, "quantized_image.jpg")
 
-# backwards
+# # backward
 Xm_hat = im.decode("quantized_image.jpg")
 Xm_hat = qt.dequantize(Xm_hat)
 Xm_hat = bw.upsample(Xm_hat)
