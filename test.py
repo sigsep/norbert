@@ -38,10 +38,10 @@ if __name__ == '__main__':
     Xl = bw(Xc)
     #  log scale and quantize spectrogram to 8bit
     Xq = qt(Xl)
-    im(Xq, "test.jpg")
+    im(Xq, "quantized_image.jpg")
 
     # backwards
-    Xm_hat = im.decode("test.jpg")
+    Xm_hat = im.decode("quantized_image.jpg")
     Xm_hat = qt.dequantize(Xm_hat)
     Xm_hat = bw.upsample(Xm_hat)
 
