@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.signal import stft, istft
 import imageio
+import tempfile as tmp
+
+eps = np.finfo(np.float).eps
 
 
 class TF(object):
@@ -12,7 +15,7 @@ class TF(object):
 
     def transform(self, x):
         if x.ndim > 1:
-            raise ValueError('Only single channel audio!')
+            x = np.mean(x, axis=1)
         f, t, X = stft(x, nperseg=self.n_fft, noverlap=self.overlap)
         X = np.flipud(X)
         return X
@@ -21,9 +24,6 @@ class TF(object):
         X = np.flipud(X)
         t, audio = istft(X, self.fs, noverlap=self.overlap)
         return audio
-
-    def __call__(self, x):
-        return self.transform(x)
 
 
 class BandwidthLimiter(object):
@@ -57,9 +57,6 @@ class BandwidthLimiter(object):
         )
         return XX
 
-    def __call__(self, X):
-        return self.downsample(X)
-
 
 class ImageEncoder(object):
     def __init__(self, format='jpg', quality=75, qtable=None):
@@ -69,6 +66,15 @@ class ImageEncoder(object):
             self.qtables = [qtable]
         else:
             self.qtables = None
+
+    def encodedecode(self, X):
+        """encode/decode on the fly"""
+        image_file = tmp.NamedTemporaryFile(suffix='.jpg')
+        y = self.decode(
+            self.encode(X, out=image_file.name)
+        )
+        image_file.close()
+        return y
 
     def encode(self, X, out=None):
         if out is not None:
@@ -85,39 +91,51 @@ class ImageEncoder(object):
         img = imageio.imread(buf)
         return np.array(img).astype(np.uint8)
 
-    def __call__(self, *args, **kwargs):
-        return self.encode(*args, **kwargs)
 
+class LogScaler(object):
+    """apply logarithmic compression and scale to min_max values"""
 
-class Quantizer(object):
-    """apply log compression and 8bit quantization"""
-    def __init__(self, nb_quant=8):
-        super(Quantizer, self).__init__()
-        self.nb_quant = nb_quant
+    def __init__(self):
         self.max = None
         self.min = None
-        self.eps = np.finfo(np.float).eps
-        self.shape = None
 
-    def quantize(self, X):
+    def scale(self, X, min=None, max=None):
         # convert to magnitude
         X = np.abs(X)
         # apply log compression
-        X_log = np.log(np.maximum(self.eps, X))
-        # save min and max values
-        self.min = np.min(X_log)
-        self.max = np.max(X_log - self.min)
-        # quantize to 8 bit
-        Q = (X_log - self.min) / self.max * (
-            2**self.nb_quant - 1
-        )
+        X_log = np.log(np.maximum(eps, X))
+        if min and max:
+            self.min = min
+            self.max = max
+        else:
+            if self.min is None and self.max is None:
+                self.self_minmax(X_log)
+
+        X_log = np.clip(X_log, self.min, self.max)
+
+        return (X_log - self.min) / (self.max - self.min)
+
+    def unscale(self, X, min=None, max=None):
+        if min is None and max is None:
+            return np.exp(X * (self.max - self.min) + self.min)
+        else:
+            return np.exp(X * (max - min) + min)
+
+    def self_minmax(self, X):
+        self.max = np.max(X)
+        self.min = self.max - 4*np.log(10)
+
+
+class Quantizer(object):
+    """apply 8bit quantization"""
+    def __init__(self, nb_quant=8):
+        super(Quantizer, self).__init__()
+        self.nb_quant = nb_quant
+
+    def quantize(self, X):
+        # quantize to `nb_quant` bits
+        Q = X * (2**self.nb_quant - 1)
         return Q.astype(np.uint8)
 
     def dequantize(self, Q):
-        X_hat = np.exp(
-            Q.astype(np.float) / (2 ** self.nb_quant - 1) * self.max + self.min
-        )
-        return X_hat
-
-    def __call__(self, X):
-        return self.quantize(X)
+        return Q.astype(np.float) / (2 ** self.nb_quant - 1)
