@@ -35,8 +35,8 @@ setup(
     keywords='wiener filter',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=[
-        'peppercorn',
-        'imageio',
+        'pillow',
+        'piexif',
         'soundfile',
         'scipy'
     ],

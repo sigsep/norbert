@@ -2,8 +2,6 @@ import soundfile as sf
 import argparse
 import norbert
 import numpy as np
-import matplotlib.pyplot as plt
-import os
 
 
 if __name__ == '__main__':
@@ -33,7 +31,7 @@ if __name__ == '__main__':
     # quantize to 8bit
     Xq = qt.quantize(Xs)
     # write as jpg image
-    im.encode(Xq, "quantized_image.jpg")
+    im.encode(Xq, "quantized_image.jpg", user_comment_dict={'max': ls.max})
 
     """
     forward path
