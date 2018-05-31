@@ -1,3 +1,6 @@
+"""To run this script you need to have peaq installed"""
+
+
 import subprocess
 import re
 import numpy as np
