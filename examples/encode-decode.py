@@ -12,6 +12,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     audio, rate = sf.read(args.input)
 
+    assert audio.shape[1] == 1, \
+        'Currently, only single-channel audio supported'
+
     # set up modules
     tf = norbert.TF()
     bw = norbert.BandwidthLimiter(bandwidth=16000)
@@ -34,7 +37,7 @@ if __name__ == '__main__':
     im.encode(Xq, "quantized_image.jpg", user_comment_dict={'max': ls.max})
 
     """
-    forward path
+    inverse path
     """
 
     Xm_hat = im.decode("quantized_image.jpg")
