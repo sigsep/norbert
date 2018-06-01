@@ -34,7 +34,7 @@ def x(request, nb_samples, nb_channels):
 
 
 def test_reconstruction(x, rate, nb_win, nb_hop):
-    tf = transform.TF(fs=rate, n_fft=nb_win, overlap=nb_hop)
+    tf = transform.TF(fs=rate, n_fft=nb_win, n_overlap=nb_hop)
 
     X = tf.transform(x)
     y = tf.inverse_transform(X)
