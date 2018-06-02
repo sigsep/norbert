@@ -2,7 +2,7 @@ import numpy as np
 
 
 class Quantizer(object):
-    """apply 8bit quantization"""
+    """apply 8-bit quantization"""
     def __init__(self, nb_quant=8):
         super(Quantizer, self).__init__()
         self.nb_quant = nb_quant
