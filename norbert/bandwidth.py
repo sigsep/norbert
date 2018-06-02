@@ -3,7 +3,8 @@ import numpy as np
 
 class BandwidthLimiter(object):
     def __init__(self, fs=44100, max_bandwidth=14000):
-        """Frequency Domain bandwidth max_bandwidth
+        """Frequency Domain bandwidth limitation
+        aka. cutting bands
 
         Parameters
         ----------

@@ -3,12 +3,12 @@ import pytest
 import norbert.bandwidth as bandwidth
 
 
-@pytest.fixture(params=[1001, 2000])
+@pytest.fixture(params=[10, 100])
 def nb_frames(request, rate):
     return int(request.param)
 
 
-@pytest.fixture(params=[512, 1024])
+@pytest.fixture(params=[1024, 777])
 def nb_bins(request):
     return request.param
 
@@ -18,8 +18,13 @@ def nb_channels(request):
     return request.param
 
 
-@pytest.fixture(params=[8000, 22050, 44100])
+@pytest.fixture(params=[8000, 16000, 44100])
 def rate(request):
+    return request.param
+
+
+@pytest.fixture(params=[np.float, np.complex])
+def dtype(request):
     return request.param
 
 
@@ -29,8 +34,8 @@ def bandwidth_reduction_factor(request):
 
 
 @pytest.fixture
-def X(request, nb_frames, nb_bins, nb_channels):
-    return np.random.random((nb_frames, nb_bins, nb_channels))
+def X(request, nb_frames, nb_bins, nb_channels, dtype):
+    return np.random.random((nb_frames, nb_bins, nb_channels)).astype(dtype)
 
 
 def test_reconstruction(X, rate, bandwidth_reduction_factor):
