@@ -9,30 +9,30 @@ class LogScaler(object):
 
     def __init__(self):
         self.max = None
-        self.min = None
 
-    def scale(self, X, min=None, max=None):
+    def scale(self, X, max=None):
         # convert to magnitude
         X = np.abs(X)
         # apply log compression
         X_log = np.log(np.maximum(eps, X))
-        if min and max:
-            self.min = min
+
+        if max is not None:
             self.max = max
         else:
-            if self.min is None and self.max is None:
-                self.self_minmax(X_log)
+            self.max = np.max(X_log)
 
-        X_log = np.clip(X_log, self.min, self.max)
+        min = self.min(self.max)
+        X_log = np.clip(X_log, min, self.max)
 
-        return (X_log - self.min) / (self.max - self.min)
+        return (X_log - min) / (self.max - min)
 
-    def unscale(self, X, min=None, max=None):
-        if min is None and max is None:
-            return np.exp(X * (self.max - self.min) + self.min)
+    def unscale(self, X, max=None):
+        if max is None:
+            min = self.min(self.max)
+            return np.exp(X * (self.max - min) + min)
         else:
+            min = self.min(max)
             return np.exp(X * (max - min) + min)
 
-    def self_minmax(self, X):
-        self.max = np.max(X)
-        self.min = self.max - 4*np.log(10)
+    def min(self, max):
+        return max - 4*np.log(10)
