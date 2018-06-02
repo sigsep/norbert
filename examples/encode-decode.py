@@ -11,13 +11,12 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     audio, rate = sf.read(args.input)
-
-    assert audio.shape[1] == 1, \
-        'Currently, only single-channel audio supported'
+    if True:
+        audio = np.atleast_2d(np.mean(audio, axis=1)).T
 
     # set up modules
     tf = norbert.TF()
-    bw = norbert.BandwidthLimiter(bandwidth=16000)
+    bw = norbert.BandwidthLimiter(max_bandwidth=15000)
     ls = norbert.LogScaler()
     qt = norbert.Quantizer()
     im = norbert.ImageEncoder(format='jpg', quality=75)
@@ -27,12 +26,16 @@ if __name__ == '__main__':
     """
     # complex spectrogram
     Xc = tf.transform(audio)
+    print("Xc", Xc.shape)
     # limit spectrogram to 16Khz
     Xl = bw.downsample(Xc)
+    print("Xl", Xl.shape)
     # log scale
     Xs = ls.scale(Xl)
+    print("Xs", Xs.shape)
     # quantize to 8bit
     Xq = qt.quantize(Xs)
+    print("Xq", Xq.shape)
     # write as jpg image
     im.encode(Xq, "quantized_image.jpg", user_comment_dict={'max': ls.max})
 
@@ -41,9 +44,13 @@ if __name__ == '__main__':
     """
 
     Xm_hat = im.decode("quantized_image.jpg")
+    print("decode", Xm_hat.shape)
     Xm_hat = qt.dequantize(Xm_hat)
+    print("dequantize", Xm_hat.shape)
     Xm_hat = ls.unscale(Xm_hat)
+    print("unscale", Xm_hat.shape)
     Xm_hat = bw.upsample(Xm_hat)
+    print("upsample", Xm_hat.shape)
 
     # use reconstruction with original phase
     X_hat = np.multiply(Xm_hat, np.exp(1j * np.angle(Xc)))

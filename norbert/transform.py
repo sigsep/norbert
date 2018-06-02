@@ -32,8 +32,7 @@ class TF(object):
         """
         self.input_shape = x.shape
         f, t, X = stft(x.T, nperseg=self.n_fft, noverlap=self.n_overlap)
-        X = np.flipud(X).T
-        return X
+        return X.T
 
     def inverse_transform(self, X):
         """
@@ -48,7 +47,6 @@ class TF(object):
             time domain audio signal
         """
 
-        X = np.flipud(X.T)
-        t, audio = istft(X, self.fs, noverlap=self.n_overlap)
+        t, audio = istft(X.T, self.fs, noverlap=self.n_overlap)
         audio = audio.T[:self.input_shape[0], :]
         return audio

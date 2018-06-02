@@ -2,19 +2,19 @@ import numpy as np
 
 
 class BandwidthLimiter(object):
-    def __init__(self, fs=44100, reduction=2):
-        """Frequency Domain bandwidth reduction
+    def __init__(self, fs=44100, max_bandwidth=14000):
+        """Frequency Domain bandwidth max_bandwidth
 
         Parameters
         ----------
         fs : int
             sample rate in Hz
-        reduction : int, optional
+        max_bandwidth : float, optional
             reduce the sample rate by given factor
         """
 
         self.fs = fs
-        self.reduction = reduction
+        self.max_bandwidth = max_bandwidth
 
     def downsample(self, X):
         """
@@ -32,16 +32,15 @@ class BandwidthLimiter(object):
         """
         self.input_shape = X.shape
         # find bins above `bandwidth`
-        ind = np.where(
-            np.linspace(
-                0,
-                float(self.fs),
-                X.shape[1] + 1,
-                endpoint=True
-            ) <= self.fs / self.reduction
-        )[0]
+        freqs = np.linspace(
+            0,
+            float(self.fs) / 2,
+            X.shape[1] + 1,
+            endpoint=True
+        )
+        ind = np.where(freqs <= self.max_bandwidth + 1)[0]
         # remove bins above `bandwidth`
-        Xd = X[:, X.shape[1] - np.max(ind):, :]
+        Xd = X[:, :np.max(ind), :]
         return Xd
 
     def upsample(self, Xd):
@@ -65,7 +64,7 @@ class BandwidthLimiter(object):
             (
                 (0, 0),
                 # pad frequency axis (before, after=0)
-                (self.input_shape[1] - Xd.shape[1], 0),
+                (0, self.input_shape[1] - Xd.shape[1]),
                 (0, 0)
             ),
             'constant'

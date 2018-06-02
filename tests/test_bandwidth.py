@@ -3,7 +3,7 @@ import pytest
 import norbert.bandwidth as bandwidth
 
 
-@pytest.fixture(params=[10, 100, 1000])
+@pytest.fixture(params=[1001, 2000])
 def nb_frames(request, rate):
     return int(request.param)
 
@@ -23,7 +23,7 @@ def rate(request):
     return request.param
 
 
-@pytest.fixture(params=[1, 2, 3])
+@pytest.fixture(params=[1, 2, 3, 4])
 def bandwidth_reduction_factor(request):
     return request.param
 
@@ -34,12 +34,11 @@ def X(request, nb_frames, nb_bins, nb_channels):
 
 
 def test_reconstruction(X, rate, bandwidth_reduction_factor):
-    tf = bandwidth.BandwidthLimiter(
+    bw = bandwidth.BandwidthLimiter(
         fs=rate,
-        reduction=bandwidth_reduction_factor,
+        max_bandwidth=float((rate / 2) // bandwidth_reduction_factor)
     )
-
-    Xd = tf.downsample(X)
+    Xd = bw.downsample(X)
     assert Xd.shape[1] == X.shape[1] // bandwidth_reduction_factor
-    Y = tf.upsample(Xd)
+    Y = bw.upsample(Xd)
     assert Y.shape == X.shape

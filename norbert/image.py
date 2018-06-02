@@ -34,7 +34,13 @@ class ImageEncoder(object):
 
     def encode(self, X, out=None, user_comment_dict=None):
         if out is not None:
-            img = Image.fromarray(X, 'L')
+            buf = np.flipud(np.squeeze(X).T)
+            if buf.ndim <= 2:
+                img = Image.fromarray(buf, 'L')
+            else:
+                buf = np.vstack((buf, np.zeros((1,) + buf[0].shape))).T
+                # buf = buf[[2, 0, 1], ...]
+                img = Image.fromarray(buf.astype(np.int8), 'RGB')
 
             if user_comment_dict is not None:
                 user_comment = piexif.helper.UserComment.dump(
@@ -62,4 +68,8 @@ class ImageEncoder(object):
 
     def decode(self, buf):
         img = Image.open(buf)
-        return np.array(img).astype(np.uint8)
+        img = np.array(img).astype(np.uint8)
+        if img.ndim <= 2:
+            return np.atleast_3d(img).transpose((1, 0, 2))
+        else:
+            return img[:, :, [1, 2]]
