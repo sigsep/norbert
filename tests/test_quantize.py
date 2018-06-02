@@ -3,7 +3,7 @@ import pytest
 import norbert.quantize as quantize
 
 
-@pytest.fixture(params=[10, 100])
+@pytest.fixture(params=[100, 1000])
 def nb_frames(request, rate):
     return int(request.param)
 
@@ -23,7 +23,7 @@ def rate(request):
     return request.param
 
 
-@pytest.fixture(params=[8])
+@pytest.fixture(params=[4, 8])
 def nbits(request):
     return request.param
 
@@ -34,9 +34,16 @@ def X(request, nb_frames, nb_bins, nb_channels):
     return np.log(np.random.random((nb_frames, nb_bins, nb_channels)))
 
 
-def test_reconstruction(X, rate, nbits):
+def test_shapes(X, nbits):
     q = quantize.Quantizer(nb_quant=nbits)
     Xq = q.quantize(X)
     Y = q.dequantize(Xq)
-    assert Y.shape == X.shape
-    assert np.sqrt(((X - Y) ** 2).mean()) < 1e-06
+    assert X.shape == Y.shape
+
+
+def test_reconstruction(rate, nbits):
+    X = np.array([0, 0.4, 0.6, 1])
+    q = quantize.Quantizer(nb_quant=nbits)
+    Xq = q.quantize(X)
+    Y = q.dequantize(Xq)
+    assert np.allclose(X, Y)
