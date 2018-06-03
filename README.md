@@ -22,7 +22,7 @@ tf = norbert.TF()
 bw = norbert.BandwidthLimiter(bandwidth=16000)
 ls = norbert.LogScaler()
 qt = norbert.Quantizer()
-im = norbert.ImageEncoder(format='jpg', quality=75)
+im = norbert.Coder(format='jpg', quality=75)
 
 """
 forward path

@@ -11,15 +11,13 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     audio, rate = sf.read(args.input)
-    if True:
-        audio = np.atleast_2d(np.mean(audio, axis=1)).T
 
     # set up modules
     tf = norbert.TF()
     bw = norbert.BandwidthLimiter(max_bandwidth=15000)
     ls = norbert.LogScaler()
     qt = norbert.Quantizer()
-    im = norbert.ImageEncoder(format='jpg', quality=75)
+    im = norbert.Coder(format='jpg', quality=75)
 
     """
     forward path
