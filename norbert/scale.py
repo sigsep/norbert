@@ -36,3 +36,9 @@ class LogScaler(object):
 
     def min(self, max):
         return max - 4*np.log(10)
+
+    def __call__(self, X, forward=True):
+        if forward:
+            return self.scale(X)
+        if not forward:
+            return self.unscale(X)

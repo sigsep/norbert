@@ -2,7 +2,7 @@ import numpy as np
 
 
 class BandwidthLimiter(object):
-    def __init__(self, fs=44100, max_bandwidth=14000):
+    def __init__(self, fs=44100, max_bandwidth=15000):
         """Frequency Domain bandwidth limitation
         aka. cutting bands
 
@@ -71,3 +71,9 @@ class BandwidthLimiter(object):
             'constant'
         )
         return X
+
+    def __call__(self, X, forward=True):
+        if forward:
+            return self.downsample(X)
+        if not forward:
+            return self.upsample(X)

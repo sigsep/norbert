@@ -50,3 +50,9 @@ class TF(object):
         t, audio = istft(X.T, self.fs, noverlap=self.n_overlap)
         audio = audio.T[:self.input_shape[0], :]
         return audio
+
+    def __call__(self, X, forward=True):
+        if forward:
+            return self.quantize(X)
+        if not forward:
+            return self.inverse_transform(X)

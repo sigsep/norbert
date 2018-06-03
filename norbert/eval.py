@@ -8,7 +8,7 @@ import tempfile as tmp
 import soundfile as sf
 
 
-def peaq(reference, target, rate):
+def peaqb(reference, target, rate):
     ref = tmp.NamedTemporaryFile(delete=False, suffix='.wav')
     tgt = tmp.NamedTemporaryFile(delete=False, suffix='.wav')
     sf.write(ref.name, reference, rate)

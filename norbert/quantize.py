@@ -14,3 +14,9 @@ class Quantizer(object):
 
     def dequantize(self, Q):
         return Q.astype(np.float) / (2 ** self.nb_quant - 1)
+
+    def __call__(self, X, forward=True):
+        if forward:
+            return self.quantize(X)
+        if not forward:
+            return self.dequantize(X)
