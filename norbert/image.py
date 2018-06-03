@@ -68,14 +68,16 @@ class Coder(object):
                 quality=self.quality,
                 optimize=True,
                 exif=exif_bytes,
-                qtables=self.qtables
+                qtables=self.qtables,
+                subsampling=0
             )
         else:
             img.save(
                 out,
                 quality=self.quality,
                 optimize=True,
-                qtables=self.qtables
+                qtables=self.qtables,
+                subsampling=0
             )
 
     def decode(self, buf):
