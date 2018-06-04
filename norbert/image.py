@@ -4,6 +4,7 @@ import tempfile as tmp
 import piexif
 import piexif.helper
 import json
+import os
 
 eps = np.finfo(np.float).eps
 
@@ -28,8 +29,10 @@ class Coder(object):
         image_file = tmp.NamedTemporaryFile(suffix='.' + self.format)
         self.encode(X, out=image_file.name)
         Y = self.decode(image_file.name)
+        file_size = os.path.getsize(image_file.name)
+
         image_file.close()
-        return Y
+        return Y, file_size
 
     def encode(self, X, out, user_comment_dict=None):
         """
