@@ -1,11 +1,22 @@
 # Norbert
-Wiener's little toolbox
+
+we present _toolbox_ as an audio I/O toolbox for effiently transform, store and filter audio signals based on magnitude spectrograms, especially suited for source separation data. In turn, _Norbert_ does use an optimized pipeline to transform and scale audio signals and then apply lossy compression to save them efficiently as JPGs. This makes it an ideal fit to process music data with machine learning libraries such as PyTorch and Tensorflow that have fast, builtin support to load and process images. 
+
+## But Spectrograms are not images, doesn't this ruin the audio quality?
+
+__Short answer__: No
+
+__Longer answer:__ It depends on the quanitzation. We have tested _norbert_ in the context of source separation models where the actual filtering is applied using the original mixture phase, thus reducing the influence of minor imperfections of the magnitude. We used the [PEAQ objective audio quality evaluation]() to assess the quality difference in a setting where we  compress the magnitude of and audio signal and synthesize using the decoded (but compressed) magnitude together with the original uncompressed mixture phase. 
+
+#### JPG Quality comparison here:
+
 
 ## Features
 
 * [X] Time-Frequency Transforms
 * [X] Log compression
 * [X] 8 bit Quantization
+* [ ] Ideal Binary Masks
 * [ ] Generalized Multi-channel Wiener Filter
 
 ## Usage Example
