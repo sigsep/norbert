@@ -13,7 +13,7 @@ class Coder(object):
     def __init__(
         self,
         format='jpg',
-        quality=75,
+        quality=80,
         qtable=None
     ):
         self.format = format
