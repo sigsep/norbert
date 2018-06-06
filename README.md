@@ -65,7 +65,7 @@ im.encode(Xq, "quantized_image.jpg")
 inverse path
 """
 
-Xm_hat = im.decode("quantized_image.jpg")
+Xm_hat, _ = im.decode("quantized_image.jpg")
 Xm_hat = qt.dequantize(Xm_hat)
 Xm_hat = ls.unscale(Xm_hat)
 Xm_hat = bw.upsample(Xm_hat)

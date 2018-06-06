@@ -28,13 +28,13 @@ class Coder(object):
         """encode/decode on the fly"""
         image_file = tmp.NamedTemporaryFile(suffix='.' + self.format)
         self.encode(X, out=image_file.name)
-        Y = self.decode(image_file.name)
+        Y, _ = self.decode(image_file.name)
         file_size = os.path.getsize(image_file.name)
 
         image_file.close()
         return Y, file_size
 
-    def encode(self, X, out, user_comment_dict=None):
+    def encode(self, X, out, user_dict=None):
         """
         Input is (nb_frames, nb_bins, nb_channels)
         Pillow takes (img_height, img_width, channels),
@@ -57,9 +57,9 @@ class Coder(object):
             buf = np.concatenate((buf, np.zeros(buf.shape[:-1] + (1,))), -1)
             img = Image.fromarray(buf.astype(np.int8), 'RGB')
 
-        if user_comment_dict is not None:
+        if user_dict is not None:
             user_comment = piexif.helper.UserComment.dump(
-                json.dumps(user_comment_dict)
+                json.dumps(user_dict)
             )
             exif_ifd = {
                 piexif.ExifIFD.UserComment: user_comment,
@@ -85,12 +85,21 @@ class Coder(object):
 
     def decode(self, buf):
         img = Image.open(buf)
+        try:
+            exif_data = img._getexif()
+            user_json = piexif.helper.UserComment.load(
+                exif_data[piexif.ExifIFD.UserComment]
+            )
+            user_data = json.loads(user_json)
+        except (TypeError, AttributeError) as e:
+            user_data = None
+
         img = np.array(img).astype(np.uint8)
         # inverse flipped image
         img = img[::-1, ...]
         if img.ndim <= 2:
-            return np.atleast_3d(img).swapaxes(0, 1)
+            return np.atleast_3d(img).swapaxes(0, 1), user_data
         else:
             img = img.swapaxes(0, 1)
             # select only red and blue channels
-            return img[:, :, [0, 1]]
+            return img[:, :, [0, 1]], user_data

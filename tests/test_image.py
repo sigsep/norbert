@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 import norbert.image as image
+import tempfile as tmp
+import os
 
 
 @pytest.fixture(params=[8, 64, 99])
@@ -15,6 +17,11 @@ def nb_bins(request):
 
 @pytest.fixture(params=[1, 2])
 def nb_channels(request):
+    return request.param
+
+
+@pytest.fixture(params=[{'a': 1}, {'a': 2.1}, {'a': 'test'}])
+def user_dict(request):
     return request.param
 
 
@@ -36,3 +43,12 @@ def test_reconstruction(X):
     Y, _file_size = q.encodedecode(X)
     assert X.ndim == Y.ndim
     assert np.allclose(X, Y)
+
+
+def test_user_data(X, user_dict):
+    q = image.Coder(format='jpg')
+    image_file = tmp.NamedTemporaryFile(suffix='.jpg')
+    q.encode(X, out=image_file.name, user_dict=user_dict)
+    Y, user_data = q.decode(image_file.name)
+    image_file.close()
+    assert user_dict == user_data

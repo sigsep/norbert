@@ -20,7 +20,7 @@ if __name__ == '__main__':
     bw = norbert.BandwidthLimiter(max_bandwidth=15000)
     ls = norbert.LogScaler()
     qt = norbert.Quantizer()
-    im = norbert.Coder(format='jpg', quality=75)
+    im = norbert.Coder(format='jpg', quality=80)
 
     """
     forward path
@@ -38,13 +38,14 @@ if __name__ == '__main__':
     Xq = qt.quantize(Xs)
     print("Xq", Xq.shape)
     # write as jpg image
-    im.encode(Xq, "quantized_image.jpg", user_comment_dict={'max': ls.max})
+    im.encode(Xq, "quantized_image.jpg", user_dict={'max': ls.max})
 
     """
     inverse path
     """
 
-    Xm_hat = im.decode("quantized_image.jpg")
+    Xm_hat, user_data = im.decode("quantized_image.jpg")
+    print(user_data['max'])
     print("decode", Xm_hat.shape)
     Xm_hat = qt.dequantize(Xm_hat)
     print("dequantize", Xm_hat.shape)
