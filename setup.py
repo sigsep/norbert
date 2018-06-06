@@ -16,10 +16,10 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     name='norbert',
     version='0.1.0',
-    description='Wiener filter and more',
+    description='Spectrogram Models',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/faroit/norbert',
+    url='https://github.com/sigsep/norbert',
     author='Fabian-Robert Stoeter',
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -43,10 +43,8 @@ setup(
 
     extras_require={  # Optional
         'dev': ['check-manifest'],
-        'test': ['pytest', 'coverage'],
+        'test': ['pytest', 'coverage', 'pytest-cov', 'pytest-pep8'],
     },
-
-    # data_files=[('my_data', ['data/data_file'])],  # Optional
 
     # entry_points={
     #     'console_scripts': [
