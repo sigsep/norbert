@@ -43,7 +43,7 @@ setup(
 
     extras_require={  # Optional
         'dev': ['check-manifest'],
-        'test': ['pytest', 'coverage', 'pytest-cov', 'pytest-pep8'],
+        'tests': ['pytest', 'coverage', 'pytest-cov', 'pytest-pep8'],
     },
 
     # entry_points={
