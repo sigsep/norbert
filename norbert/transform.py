@@ -53,6 +53,6 @@ class TF(object):
 
     def __call__(self, X, forward=True):
         if forward:
-            return self.quantize(X)
+            return self.transform(X)
         if not forward:
             return self.inverse_transform(X)
