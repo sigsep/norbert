@@ -26,13 +26,13 @@ def X(request, nb_frames, nb_bins, nb_channels):
 
 def test_shapes(X):
     q = image.Coder(format='png')
-    Y = q.encodedecode(X)
+    Y, _file_size = q.encodedecode(X)
     assert X.shape == Y.shape
 
 
 def test_reconstruction(X):
     # use lossless coder to test reconstruction
     q = image.Coder(format='png')
-    Y = q.encodedecode(X)
-    assert Y.ndim == Y.ndim
+    Y, _file_size = q.encodedecode(X)
+    assert X.ndim == Y.ndim
     assert np.allclose(X, Y)
