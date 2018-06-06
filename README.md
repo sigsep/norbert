@@ -1,6 +1,6 @@
 # Norbert
 
-is an audio I/O toolbox for effiently transform, store and filter audio spectrograms, especially suited for machine learning tasks that only require magnitude data such as in source separation. In turn, _Norbert_ does use an optimized pipeline to transform and scale audio signals and then apply lossy compression to save them efficiently as JPGs. This makes it an ideal fit to process music data with machine learning libraries such as PyTorch and Tensorflow that have fast, builtin support to load and process images. 
+is an audio I/O toolbox for effiently transform, store and filter audio spectrograms, especially suited for machine learning tasks that only require non-negative data such as in source separation. In turn, _Norbert_ does use an optimized pipeline to transform and scale audio signals and then apply lossy compression to save them efficiently as JPGs. This makes it an ideal fit to process music data with machine learning libraries such as PyTorch and Tensorflow that have fast, builtin support to load and process images. 
 
 ## But Spectrograms are not images, doesn't this destroy audio quality?
 
