@@ -33,7 +33,7 @@ if [ ! -d "$src" ]; then
         conda_create
 
         source activate $ENV_NAME
-
+        pip install setuptools --upgrade
         pip install python-coveralls
 
         source deactivate
