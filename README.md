@@ -16,11 +16,11 @@ Many researchers save their magnitude dataset as numpy pickles or hdf5 files. Wh
 Here is a small bitrate comparison:
 
 * __npy 64bit:__ ~750 kb/s
-* __npy 64bit: zipped:__ ~750
+* __npy 64bit: zipped:__ ~680 kb/s
 * __MP3 good quality:__ 256 kb/s
 * __AAC good quality:__ 160 kb/s
-* __norbert 8bit quantization as `npy`:__ 89 kb/s
-* __norbert 8bit quantization as `jpg (q=80)`:__ 15 kb/s
+* __norbert quantization saved as 8bit npy:__ 89 kb/s
+* __norbert quantization saved as 8bit jpg (`q=80`):__ 15 kb/s
 
 
 ## Features
