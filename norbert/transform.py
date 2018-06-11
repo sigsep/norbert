@@ -56,3 +56,23 @@ class TF(object):
             return self.transform(X)
         if not forward:
             return self.inverse_transform(X)
+
+
+class Energy(object):
+    """Convert to non-negative magnitude"""
+    def __init__(self, alpha=1.0):
+        self.alpha = alpha
+        self.X = None
+
+    def magnitude(self, X):
+        self.X = X
+        return np.abs(X) ** self.alpha
+
+    def complex(self, Xm):
+        return np.multiply(Xm, np.exp(1j * np.angle(self.X)))
+
+    def __call__(self, X, forward=True):
+        if forward:
+            return self.magnitude(X)
+        if not forward:
+            return self.complex(X)
