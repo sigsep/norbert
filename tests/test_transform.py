@@ -40,3 +40,13 @@ def test_reconstruction(x, rate, nb_win, nb_hop):
     y = tf.inverse_transform(X)
 
     assert np.allclose(x, y)
+
+
+def test_energy(x):
+    tf = transform.TF()
+    X = tf.transform(x)
+    en = transform.Energy()
+    Xm = en.magnitude(X)
+    X_hat = en.complex(Xm)
+
+    assert np.allclose(X, X_hat)
