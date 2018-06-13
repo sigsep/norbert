@@ -4,6 +4,8 @@ from . bandwidth import BandwidthLimiter
 from . scale import LogScaler
 from . quantize import Quantizer
 from . image import Coder
+from . gaussian import wiener
+from . gaussian import softmask
 
 
 class Processor(object):

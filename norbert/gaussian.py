@@ -116,8 +116,8 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
     nb_sources = v.shape[-1]
 
     # define the identity matrx
-    identity = np.tile(np.eye(nb_channels, dtype = R_j.dtype)[None, ...],
-                           (nb_bins, 1, 1)
+    identity = np.tile(np.eye(nb_channels, dtype=x.dtype)[None, ...],
+                       (nb_bins, 1, 1))
 
     # initialize the spatial covariance matrices with identity
     # R.shape is (nb_bins, nb_channels, nb_channels, nb_sources)
@@ -129,7 +129,7 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
     for it in range(iterations+1):
         # constructing the mixture covariance matrix. Doing it with a loop
         # to avoid storing anytime in RAM the whole 6D tensor
-        Cxx = np.empty((nb_frames, nb_bins, nb_channels, nb_channels), x.dtype)
+        Cxx = np.zeros((nb_frames, nb_bins, nb_channels, nb_channels), x.dtype)
         for j in range(nb_sources):
             Cxx += v[..., None, None, j] * R[None, ..., j]
 
@@ -137,7 +137,7 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
 
         for j in range(nb_sources):
             # compute the posterior distribution of the source
-            y[...,j], C_j = posterior(v[...,j], R[...,j], inv_Cxx)
+            y[..., j], C_j = posterior(v[..., j], R[..., j], inv_Cxx, x)
 
             # for the last iteration, we don't update the parameters
             if it == iterations:
@@ -147,12 +147,12 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
 
             # 1. update the spatial covariance matrix
             R[..., j] = (np.sum(C_j, axis=0)
-                         / (eps+np.sum(v[...,j, None, None], axis=0))
+                         / (eps+np.sum(v[..., j, None, None], axis=0)))
 
             # add some regularization to this estimate: normalize and add small
             # identify matrix, so we are sure it behaves well numerically.
             R[..., j] = (R[..., j] * nb_channels / np.trace(R[..., j])
-                        + eps * identity)
+                         + eps * identity)
 
             # 2. Udate the power spectral density estimate.
             if not update_psd:
@@ -165,12 +165,12 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
             v[..., j] = 0
             for (i1, i2) in itertools.product(*(range(nb_channels),)*2):
                 v[..., j] += 1./nb_channels*np.real(
-                    Rj_inv[:, i1, i2][:, None]*C_j[..., i2, i1]
+                    Rj_inv[None, :, i1, i2]*C_j[..., i2, i1]
                 )
-
         return y, v, R
 
-def singlechannel_wiener(v, x):
+
+def softmask(v, x):
     """
     apply simple ratio mask on all the channels of x, independently,
     using the values provided for the sources spectrograms for
@@ -178,7 +178,7 @@ def singlechannel_wiener(v, x):
 
     Parameters
     ----------
-    v : ndarrays, shape (nb_frames, nb_bins, nb_sources)
+    v : ndarray, shape (nb_frames, nb_bins, nb_sources)
         spectrograms of the sources
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         mixture signal
@@ -188,13 +188,14 @@ def singlechannel_wiener(v, x):
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
         estimated sources
     """
-
     # to avoid dividing by zero
     eps = np.finfo(np.float).eps
-    total_energy = np.sum(v, axis=-1)
-    return  (v/(eps + total_energy)[..., None])[..., None, :] * x[..., None]
 
-def multichannel_wiener(v, x,  update_psd=True, iterations=2):
+    total_energy = np.sum(v, axis=-1)
+    return (v/(eps + total_energy)[..., None])[..., None, :] * x[..., None]
+
+
+def wiener(v, x,  update_psd=True, iterations=2):
     """
     apply a multichannel wiener filter to x.
     the spatial statistics are estimated automatically with an EM algorithm,
@@ -217,5 +218,4 @@ def multichannel_wiener(v, x,  update_psd=True, iterations=2):
         estimated sources
     """
 
-    # to avoid dividing by zero
-    return  expectation_maximization(v, x, iterations, update_psd)[0]
+    return expectation_maximization(v, x, iterations, update_psd)[0]

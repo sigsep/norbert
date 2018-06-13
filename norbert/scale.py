@@ -35,7 +35,7 @@ class LogScaler(object):
             return np.exp(X * (max - min) + min)
 
     def min(self, max):
-        return max - 4*np.log(10)
+        return max - 20*np.log(10)
 
     def __call__(self, X, forward=True):
         if forward:

@@ -31,7 +31,7 @@ class BandwidthLimiter(object):
         Xd : ndarray, shape (nb_frames, new_nb_bins, nb_channels)
             reduced complex or magnitude STFT output
         """
-        self.input_shape = X.shape
+        self.nb_bins = X.shape[1]
         # find bins above `bandwidth`
         freqs = np.linspace(
             0,
@@ -41,7 +41,7 @@ class BandwidthLimiter(object):
         )
         ind = np.where(freqs <= self.max_bandwidth + 1)[0]
         # remove bins above `bandwidth`
-        Xd = X[:, :np.max(ind), :]
+        Xd = X[:, :np.max(ind), ...]
         return Xd
 
     def upsample(self, Xd):
@@ -60,16 +60,10 @@ class BandwidthLimiter(object):
 
         """
         # add zeros for upper part of spectrogram
-        X = np.pad(
-            Xd,
-            (
-                (0, 0),
-                # pad frequency axis (before, after=0)
-                (0, self.input_shape[1] - Xd.shape[1]),
-                (0, 0)
-            ),
-            'constant'
-        )
+        pads_with = [[0, 0], ] * len(Xd.shape)
+        # pad frequency axis (before, after=0)
+        pads_with[1] = [0, self.nb_bins - Xd.shape[1]]
+        X = np.pad(Xd, pads_with, 'constant')
         return X
 
     def __call__(self, X, forward=True):
