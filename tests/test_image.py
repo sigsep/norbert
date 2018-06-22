@@ -20,7 +20,14 @@ def nb_channels(request):
     return request.param
 
 
-@pytest.fixture(params=[{'a': 1}, {'a': 2.1}, {'a': 'test'}])
+@pytest.fixture(
+    params=[
+        {'a': 1},
+        {'a': 2.1},
+        {'a': 'test'},
+        {'list': ['a', 'b']}
+    ]
+)
 def user_dict(request):
     return request.param
 

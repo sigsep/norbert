@@ -23,7 +23,7 @@ def rate(request):
     return request.param
 
 
-@pytest.fixture(params=[np.float, np.complex])
+@pytest.fixture(params=[np.float])
 def dtype(request):
     return request.param
 
@@ -49,12 +49,10 @@ def test_reconstruction(X, rate):
     assert np.sqrt(((X - Y) ** 2).mean()) < 1e-06
 
 
-def test_max(X, rate):
-    bw = scale.LogScaler()
-    Xs = bw.scale(X)
-
-    bw2 = scale.LogScaler()
-    bw2.scale(X*2, max=bw.max)
-    Y = bw2.unscale(Xs, max=bw.max)
+def test_bounds(X, rate):
+    bounds = (0, 100)
+    ls = scale.LogScaler()
+    Xs = ls.scale(X, bounds=list(bounds))
+    Y = ls.unscale(Xs, bounds=list(bounds))
     assert Y.shape == X.shape
     assert np.sqrt(((X - Y) ** 2).mean()) < 1e-06

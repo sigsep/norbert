@@ -11,7 +11,7 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     audio, rate = sf.read(args.input)
-    mono = False
+    mono = True
     if mono:
         audio = np.atleast_2d(np.mean(audio, axis=1)).T
 
@@ -38,14 +38,14 @@ if __name__ == '__main__':
     Xq = qt.quantize(Xs)
     print("Xq", Xq.shape)
     # write as jpg image
-    im.encode(Xq, "quantized_image.jpg", user_dict={'max': ls.max})
+    im.encode(Xq, "quantized_image.jpg")
 
     """
     inverse path
     """
 
     Xm_hat, user_data = im.decode("quantized_image.jpg")
-    print(user_data['max'])
+    # print(user_data['max'])
     print("decode", Xm_hat.shape)
     Xm_hat = qt.dequantize(Xm_hat)
     print("dequantize", Xm_hat.shape)

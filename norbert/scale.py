@@ -5,37 +5,33 @@ eps = np.finfo(np.float).eps
 
 
 class LogScaler(object):
-    """apply logarithmic compression and scale to min_max values"""
+    """apply logarithmic compression and scale to bounds"""
 
-    def __init__(self):
-        self.max = None
-
-    def scale(self, X, max=None):
+    def scale(self, X, bounds=None):
         # convert to magnitude
         X = np.abs(X)
         # apply log compression
         X_log = np.log(np.maximum(eps, X))
 
-        if max is not None:
-            self.max = max
+        if bounds is not None:
+            self.bounds = bounds
         else:
-            self.max = np.max(X_log)
+            self.bounds = self._bounds(X_log)
 
-        min = self.min(self.max)
-        X_log = np.clip(X_log, min, self.max)
+        X_log = np.clip(X_log, self.bounds[0], self.bounds[1])
 
-        return (X_log - min) / (self.max - min)
+        return (X_log - self.bounds[0]) / (self.bounds[1] - self.bounds[0])
 
-    def unscale(self, X, max=None):
-        if max is None:
-            min = self.min(self.max)
-            return np.exp(X * (self.max - min) + min)
+    def unscale(self, X, bounds=None):
+        if bounds is None:
+            return np.exp(
+                X * (self.bounds[1] - self.bounds[0]) + self.bounds[0]
+            )
         else:
-            min = self.min(max)
-            return np.exp(X * (max - min) + min)
+            return np.exp(X * (bounds[1] - bounds[0]) + bounds[0])
 
-    def min(self, max):
-        return max - 20*np.log(10)
+    def _bounds(self, X, min=60):
+        return np.percentile(X, (min, 100))
 
     def __call__(self, X, forward=True):
         if forward:
