@@ -22,8 +22,10 @@ def invert(M, eps):
         invM = 1.0/(M+eps)
     elif nb_channels == 2:
         # two channels case: analytical expression
-        invDet = 1.0/(eps + M[..., 0, 0]*M[..., 1, 1]
-                      - M[..., 0, 1]*M[..., 1, 0])
+        invDet = 1.0 / (
+            eps + M[..., 0, 0]*M[..., 1, 1] -
+            M[..., 0, 1]*M[..., 1, 0]
+        )
         invM = np.empty_like(M)
         invM[..., 0, 0] = invDet*M[..., 1, 1]
         invM[..., 1, 0] = -invDet*M[..., 1, 0]
@@ -146,13 +148,17 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
             # now update the parmeters
 
             # 1. update the spatial covariance matrix
-            R[..., j] = (np.sum(C_j, axis=0)
-                         / (eps+np.sum(v[..., j, None, None], axis=0)))
+            R[..., j] = (
+                np.sum(C_j, axis=0) /
+                (eps+np.sum(v[..., j, None, None], axis=0))
+            )
 
             # add some regularization to this estimate: normalize and add small
             # identify matrix, so we are sure it behaves well numerically.
-            R[..., j] = (R[..., j] * nb_channels / np.trace(R[..., j])
-                         + eps * identity)
+            R[..., j] = (
+                R[..., j] * nb_channels /
+                np.trace(R[..., j]) + eps * identity
+            )
 
             # 2. Udate the power spectral density estimate.
             if not update_psd:
