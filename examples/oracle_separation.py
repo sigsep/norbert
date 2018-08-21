@@ -8,8 +8,6 @@ import museval
 def oracle(track, separation_fn):
     # set (trackwise) norbert objects
     tf = norbert.TF()
-    bw = norbert.BandwidthLimiter(max_bandwidth=8000)
-    bw.nb_bins = 1025
     ls = norbert.LogScaler()
     qt = norbert.Quantizer()
     im = norbert.Coder(format='jpg', quality=80)
@@ -55,7 +53,7 @@ def oracle(track, separation_fn):
 
 
 if __name__ == '__main__':
-    mus = musdb.DB(is_wav=True)
+    mus = musdb.DB()
     mus.run(
         functools.partial(
             oracle, separation_fn=norbert.softmask
