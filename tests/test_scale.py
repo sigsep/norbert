@@ -31,7 +31,9 @@ def dtype(request):
 @pytest.fixture
 def X(request, nb_frames, nb_bins, nb_channels, dtype):
     np.random.seed(0)
-    return np.random.random((nb_frames, nb_bins, nb_channels)).astype(dtype)
+    X = np.random.random((nb_frames, nb_bins, nb_channels)).astype(dtype)
+    X[:, :500, :] = 0
+    return X
 
 
 def test_upscale(X, rate):
@@ -55,4 +57,4 @@ def test_bounds(X, rate):
     Xs = ls.scale(X, bounds=bounds)
     Y = ls.unscale(Xs, bounds=bounds)
     assert Y.shape == X.shape
-    assert np.sqrt(((X - Y) ** 2).mean()) < 1e-06
+    assert np.sqrt(((X - Y) ** 2).mean()) < 1e-03
