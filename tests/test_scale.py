@@ -46,13 +46,13 @@ def test_reconstruction(X, rate):
     Xs = bw.scale(X)
     Y = bw.unscale(Xs)
     assert Y.shape == X.shape
-    assert np.sqrt(((X - Y) ** 2).mean()) < 1e-06
+    assert np.sqrt(((X - Y) ** 2).mean()) < 1e-03
 
 
 def test_bounds(X, rate):
-    bounds = (0, 100)
+    bounds = [-10, 0]
     ls = scale.LogScaler()
-    Xs = ls.scale(X, bounds=list(bounds))
-    Y = ls.unscale(Xs, bounds=list(bounds))
+    Xs = ls.scale(X, bounds=bounds)
+    Y = ls.unscale(Xs, bounds=bounds)
     assert Y.shape == X.shape
     assert np.sqrt(((X - Y) ** 2).mean()) < 1e-06

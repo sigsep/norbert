@@ -30,7 +30,7 @@ class LogScaler(object):
         else:
             return np.exp(X * (bounds[1] - bounds[0]) + bounds[0])
 
-    def _bounds(self, X, min=60):
+    def _bounds(self, X, min=40):
         return np.percentile(X, (min, 100))
 
     def __call__(self, X, forward=True):

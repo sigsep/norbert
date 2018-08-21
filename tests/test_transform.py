@@ -40,3 +40,11 @@ def test_reconstruction(x, rate, nb_win, nb_hop):
     y = tf.inverse_transform(X)
 
     assert np.allclose(x, y)
+
+
+def test_copy(x, rate, nb_win, nb_hop):
+    xo = np.copy(x)
+    tf = transform.TF(fs=rate, n_fft=nb_win, n_overlap=nb_hop)
+
+    _ = tf.transform(x)
+    assert np.allclose(x, xo)
