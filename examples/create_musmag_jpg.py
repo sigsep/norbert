@@ -39,8 +39,15 @@ if __name__ == '__main__':
             os.makedirs(track_estimate_dir)
 
         # write out tracks to disk
-
-        im.encode(Qm, os.path.join(track_estimate_dir, 'mix.jpg'))
+        im.encode(
+            Qm,
+            os.path.join(track_estimate_dir, 'mix.jpg'),
+            user_data={'bounds': mixture_bounds.tolist()}
+        )
         for name, value in track.targets.items():
             Q = pipeline(value, bounds=mixture_bounds)
-            im.encode(Q, os.path.join(track_estimate_dir, name + '.jpg'))
+            im.encode(
+                Q,
+                os.path.join(track_estimate_dir, name + '.jpg'),
+                user_data={'bounds': mixture_bounds.tolist()}
+            )
