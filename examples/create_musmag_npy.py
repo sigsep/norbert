@@ -13,24 +13,20 @@ if __name__ == '__main__':
         # set (trackwise) norbert objects
         tf = norbert.TF()
         ls = norbert.LogScaler()
-        qt = norbert.Quantizer()
 
-        def pipeline(t, mono=False):
+        def pipeline(t, mono=True, bounds=None):
+            x = tf.transform(t.audio)
             if mono:
-                audio = np.sqrt(
-                    np.sum(np.abs(t.audio)**2, axis=-1, keepdims=True)
-                )
-            else:
-                audio = t.audio
+                x = np.sqrt(np.sum(np.abs(x)**2, axis=-1, keepdims=True))
 
-            Q = qt.quantize(
-                ls.scale(
-                    tf.transform(audio)
-                )
+            S = ls.scale(
+                x,
+                bounds=bounds
             )
-            return Q
+            return S.astype(np.float32)
 
         X = pipeline(track)
+        mixture_bounds = ls.bounds
 
         track_estimate_dir = os.path.join(
             estimates_dir, track.subset, track.name
@@ -42,6 +38,5 @@ if __name__ == '__main__':
 
         np.save(os.path.join(track_estimate_dir, 'mix.npy'), X)
         for name, track in track.targets.items():
-            S = pipeline(track)
-            import ipdb; ipdb.set_trace()
+            S = pipeline(track, bounds=mixture_bounds)
             np.save(os.path.join(track_estimate_dir, name + '.npy'), S)
