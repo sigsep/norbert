@@ -3,6 +3,24 @@ import musdb
 import numpy as np
 import functools
 import museval
+import pandas as pd
+
+
+class DF_writer(object):
+    def __init__(self, columns):
+        self.df = pd.DataFrame(columns=columns)
+        self.columns = columns
+
+    def append(self, **row_data):
+        if set(self.columns) == set(row_data):
+            s = pd.Series(row_data)
+            self.df = self.df.append(s, ignore_index=True)
+
+    def df(self):
+        return self.df
+
+
+data = DF_writer(['track', 'SDR', 'percentile', 'size'])
 
 
 def oracle(track, separation_fn):
@@ -26,7 +44,7 @@ def oracle(track, separation_fn):
 
         v_j = ls.scale(v_j)
         v_j = qt.quantize(v_j)
-        v_j, file_size = im.encodedecode(v_j)
+        # v_j, file_size = im.encodedecode(v_j)
 
         v_j = qt.dequantize(v_j)
         v_j = ls.unscale(v_j)
@@ -47,19 +65,29 @@ def oracle(track, separation_fn):
         track, estimates, output_dir=None
     )
 
-    print(scores)
+    print(np.mean(scores.means('SDR')))
+
+    data.append(
+        track=track.name,
+        SDR=np.mean(scores.means('SDR')),
+        percentile=0.1,
+        size=100
+    )
 
     return estimates
 
 
 if __name__ == '__main__':
-    mus = musdb.DB()
+    mus = musdb.DB(is_wav=True)
+    tracks = mus.load_mus_tracks(subsets=['test'])
     mus.run(
         functools.partial(
             oracle, separation_fn=norbert.softmask
         ),
         estimates_dir='test_wiener',
-        subsets='test',
+        tracks=tracks,
         parallel=False,
         cpus=1
     )
+
+    print(data.df.mean())
