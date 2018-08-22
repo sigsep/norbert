@@ -33,8 +33,8 @@ def X(request, nb_frames, nb_bins, nb_channels):
 
 
 @pytest.fixture
-def V(request, nb_frames, nb_bins, nb_sources):
-    return np.random.random((nb_frames, nb_bins, nb_sources))
+def V(request, nb_frames, nb_bins, nb_channels, nb_sources):
+    return np.random.random((nb_frames, nb_bins, nb_channels, nb_sources))
 
 
 def test_shapes(X, V):
