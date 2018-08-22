@@ -28,7 +28,7 @@ def nb_channels(request):
         {'list': ['a', 'b']}
     ]
 )
-def user_dict(request):
+def user_data(request):
     return request.param
 
 
@@ -52,10 +52,10 @@ def test_reconstruction(X):
     assert np.allclose(X, Y)
 
 
-def test_user_data(X, user_dict):
+def test_user_data(X, user_data):
     q = image.Coder(format='jpg')
     image_file = tmp.NamedTemporaryFile(suffix='.jpg')
-    q.encode(X, out=image_file.name, user_dict=user_dict)
-    Y, user_data = q.decode(image_file.name)
+    q.encode(X, out=image_file.name, user_data=user_data)
+    Y, user_data_out = q.decode(image_file.name)
     image_file.close()
-    assert user_dict == user_data
+    assert user_data == user_data_out

@@ -34,7 +34,7 @@ class Coder(object):
         image_file.close()
         return Y, file_size
 
-    def encode(self, X, out, user_dict=None):
+    def encode(self, X, out, user_data=None):
         """
         Input is (nb_frames, nb_bins, nb_channels)
         Pillow takes (img_height, img_width, channels),
@@ -57,9 +57,9 @@ class Coder(object):
             buf = np.concatenate((buf, np.zeros(buf.shape[:-1] + (1,))), -1)
             img = Image.fromarray(buf.astype(np.int8), 'RGB')
 
-        if user_dict is not None:
+        if user_data is not None:
             user_comment = piexif.helper.UserComment.dump(
-                json.dumps(user_dict)
+                json.dumps(user_data)
             )
             exif_ifd = {
                 piexif.ExifIFD.UserComment: user_comment,
