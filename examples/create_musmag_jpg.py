@@ -14,7 +14,7 @@ if __name__ == '__main__':
         tf = norbert.TF()
         ls = norbert.LogScaler()
         qt = norbert.Quantizer()
-        im = norbert.Coder(format='jpg', quality=90)
+        im = norbert.Coder(format='jpg', quality=85)
 
         def pipeline(t, mono=True, bounds=None):
             x = tf.transform(t.audio)
