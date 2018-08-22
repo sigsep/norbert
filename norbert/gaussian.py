@@ -21,8 +21,11 @@ def invert(M, eps):
         # scalar case
         invM = 1.0/(M+eps)
     elif nb_channels == 2:
+        M = M[...]
+        M[..., 0, 0] += eps
+        M[..., 1, 1] += eps
         # two channels case: analytical expression
-        invDet = 1.0/(eps + M[..., 0, 0]*M[..., 1, 1]
+        invDet = 1.0/(M[..., 0, 0]*M[..., 1, 1]
                       - M[..., 0, 1]*M[..., 1, 0])
         invM = np.empty_like(M)
         invM[..., 0, 0] = invDet*M[..., 1, 1]
@@ -37,18 +40,22 @@ def invert(M, eps):
     return invM
 
 
-def posterior(v_j, R_j, inv_Cxx, x):
+def posterior(v_j, R_j, inv_Cxx, x, theoretical_cov=False):
     """
     computing the posterior distribution of a source given the mixture
 
     Parameters
     ----------
-    v_j : ndarray, shape (nb_frames, nb_bins)
-        power spectral density of the source
+    v_j : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_channels).
+        power spectral density of the source.
     R_j : ndarray, shape (nb_bins, nb_channels, nb_channels)
         spatial covariance matrix of the source
     inv_Cxx : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_channels)
         inverse of the mixture covariance
+    theoretical_cov: boolean
+        indicates whether to use the posterior covariance suggested by the
+        theory. Defaults to False because this was observed as less
+        effective than just the outer product of the posterior mean.
 
     Returns
     -------
@@ -57,39 +64,57 @@ def posterior(v_j, R_j, inv_Cxx, x):
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)
         posterior covariance
     """
-
     (nb_bins, nb_channels) = R_j.shape[:2]
 
     # computes multichannel Wiener gain as v_j R_j inv_Cxx
-    G = np.empty_like(inv_Cxx)
+    G = np.zeros_like(inv_Cxx)
     for (i1, i2, i3) in itertools.product(*(range(nb_channels),)*3):
-        G[..., i1, i2] += v_j * R_j[None, :, i1, i3] * inv_Cxx[..., i3, i2]
+        G[..., i1, i2] += (v_j[..., i1, i3] * R_j[None, :, i1, i3]
+                           * inv_Cxx[..., i3, i2])
+
+    # def logit(W, threshold, slope):
+    #     return 1./(1.0+np.exp(-slope*(W-threshold)))
+    # regularization = 1e-4
+    # thresh = 0.7
+    # slope = 30
+    # if thresh is not None:
+    #     print('applying threshold')
+    #     #decomposes into spatial filtering and single sensor Wiener, and
+    #     # applies logit compression to the Wiener mask
+    #     Wg = np.abs(np.trace(G, axis1=2, axis2=3)) / nb_channels
+    #     Wg_new = logit(Wg, thresh, slope)
+    #     for i in range(nb_channels):
+    #         G[..., i, i] *= (regularization + Wg_new)/(regularization + Wg)
+    #     G *= Wg[..., None, None]
 
     # compute posterior average by (matrix-)multiplying this gain with the mix.
-    mu = 0
+    mu = 0+0j
     for i in range(nb_channels):
         mu += G[..., i] * x[..., i, None]
 
-    # 1/ compute observed covariance for source: mu mu'+ (I-G)R_j
-    C = np.empty_like(inv_Cxx)
-    for (i1, i2, i3) in itertools.product(*(range(nb_channels),)*3):
-        C[..., i1, i2] += G[..., i1, i3] * R_j[None, :, i3, i2]
-    C += R_j
+    # 1/ compute total posterior covariance for source
+    C = np.zeros_like(inv_Cxx)
+    if theoretical_cov:
+        # mu mu'+ (I-G) v_j R_j is the theoretical one, adding the last part
+        for (i1, i2, i3) in itertools.product(*(range(nb_channels),)*3):
+            C[..., i1, i2] -= G[..., i1, i3] * R_j[None, :, i3, i2]
+            C += R_j
+        C *= v_j
     for (i1, i2) in itertools.product(*(range(nb_channels),)*2):
         C[..., i1, i2] += mu[..., i1] * np.conj(mu[..., i2])
     return mu, C
 
 
-def expectation_maximization(v, x, iterations=2, update_psd=True):
+def expectation_maximization(v, x, iterations=2):
     """
     expectation maximization, with initial values provided for the sources
     power spectral densities.
 
     Parameters
     ----------
-    v : ndarrays, shape (nb_frames, nb_bins, nb_sources)
-        power spectral densities of the sources. Must be homogeneous to squared
-        magnitudes
+    v : ndarrays, shape (nb_frames, nb_bins, [nb_channels], nb_sources)
+        power spectral densities of the sources. optionally 4D.
+        Must be homogeneous to magnitudes, not squared magnitudes !
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         mixture signal
     iterations: int
@@ -109,7 +134,7 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
         estimated spatial covariance matrices
     """
     # to avoid dividing by zero
-    eps = np.finfo(np.float).eps
+    eps = np.finfo(np.float).eps*100
 
     # dimensions
     (nb_frames, nb_bins, nb_channels) = x.shape
@@ -126,18 +151,35 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
     # initialize the results
     y = np.empty((nb_frames, nb_bins, nb_channels, nb_sources), x.dtype)
 
+    print('Number of iterations: ', iterations)
     for it in range(iterations+1):
         # constructing the mixture covariance matrix. Doing it with a loop
         # to avoid storing anytime in RAM the whole 6D tensor
+        print('iteration %d' % it)
+        print('   inverting mix covariance')
+
+        def v_j(j):
+            res = np.zeros((nb_frames, nb_bins, nb_channels, nb_channels))
+
+            def v_ij(i, j):
+                return v[..., i, j] if len(v.shape) == 4 else v[..., j]
+
+            for (i1, i2) in itertools.product(*(range(nb_channels),)*2):
+                res[..., i1, i2] = v_ij(i1, j) * v_ij(i2, j)
+            return res
+
         Cxx = np.zeros((nb_frames, nb_bins, nb_channels, nb_channels), x.dtype)
         for j in range(nb_sources):
-            Cxx += v[..., None, None, j] * R[None, ..., j]
+            Cxx += v_j(j) * R[None, ..., j]
 
         inv_Cxx = invert(Cxx, eps)
 
         for j in range(nb_sources):
+            vj = v_j(j)
+
             # compute the posterior distribution of the source
-            y[..., j], C_j = posterior(v[..., j], R[..., j], inv_Cxx, x)
+            print('   separating source %d' % j)
+            y[..., j], C_j = posterior(vj, R[..., j], inv_Cxx, x)
 
             # for the last iteration, we don't update the parameters
             if it == iterations:
@@ -145,29 +187,31 @@ def expectation_maximization(v, x, iterations=2, update_psd=True):
 
             # now update the parmeters
 
+
+            # 1. Udate the power spectral density estimate.
+            print('   updating v for source %d' % j)
+            v[..., j] = np.sqrt(np.diagonal(np.abs(C_j),
+                                            axis1=2, axis2=3))
+
             # 1. update the spatial covariance matrix
+            print('   updating R for source %d' % j)
+            #import ipdb; ipdb.set_trace()
             R[..., j] = (np.sum(C_j, axis=0)
-                         / (eps+np.sum(v[..., j, None, None], axis=0)))
+                         / (eps + v_j(j).sum(axis=0)))
+
 
             # add some regularization to this estimate: normalize and add small
             # identify matrix, so we are sure it behaves well numerically.
-            R[..., j] = (R[..., j] * nb_channels / np.trace(R[..., j])
-                         + eps * identity)
+            R[..., j] = (R[..., j] * nb_channels / (eps+np.trace(R[..., j, None, None],axis1=1,axis2=2))
+                         + 1e-3*identity)
 
-            # 2. Udate the power spectral density estimate.
-            if not update_psd:
-                continue
-
-            # invert Rj
-            Rj_inv = invert(R[..., j], eps)
-
-            # update the PSD
-            v[..., j] = 0
+            """Rj_inv = invert(R[..., j], eps)
             for (i1, i2) in itertools.product(*(range(nb_channels),)*2):
-                v[..., j] += 1./nb_channels*np.real(
-                    Rj_inv[None, :, i1, i2]*C_j[..., i2, i1]
-                )
-        return y, v, R
+                new_v[..., j] += 1./nb_channels*np.real(
+                    Rj_inv[None, :, i1, i2] * C_j_post[..., i2, i1]
+                )"""
+
+    return y, v, R
 
 
 def softmask(v, x):
@@ -178,7 +222,7 @@ def softmask(v, x):
 
     Parameters
     ----------
-    v : ndarray, shape (nb_frames, nb_bins, nb_sources)
+    v : ndarray, shape (nb_frames, nb_bins, [nb_channels], nb_sources)
         spectrograms of the sources
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         mixture signal
@@ -190,9 +234,10 @@ def softmask(v, x):
     """
     # to avoid dividing by zero
     eps = np.finfo(np.float).eps
-
-    total_energy = np.sum(v, axis=-1)
-    return (v/(eps + total_energy)[..., None])[..., None, :] * x[..., None]
+    if len(v.shape) == 3:
+        v = v[..., None, :]
+    total_energy = np.sum(v, axis=-1, keepdims=True)
+    return v/(eps + total_energy) * x[..., None]
 
 
 def wiener(v, x,  update_psd=True, iterations=2):
@@ -203,8 +248,8 @@ def wiener(v, x,  update_psd=True, iterations=2):
 
     Parameters
     ----------
-    v : ndarrays, shape (nb_frames, nb_bins, nb_sources)
-        spectrograms of the sources
+    v : ndarrays, shape (nb_frames, nb_bins, [nb_channels], nb_sources)
+        spectrograms of the sources, homogeneous to magnitudes, optionally 4D.
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         mixture signal
     update_psd : boolean
