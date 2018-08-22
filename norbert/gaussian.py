@@ -194,11 +194,17 @@ def expectation_maximization(v, x, iterations=2):
             print('   updating v for source %d' % j)
             v[..., j] = np.sqrt(np.diagonal(np.abs(C_j),
                                             axis1=2, axis2=3))
+            # 2. Udate the power spectral density estimate.
+            """Rj_inv = invert(R[..., j], eps)
+            for (i1, i2) in itertools.product(*(range(nb_channels),)*2):
+                new_v[..., j] += 1./nb_channels*np.real(
+                    Rj_inv[None, :, i1, i2] * C_j_post[..., i2, i1]
+                )"""
 
             # 1. update the spatial covariance matrix
             R[..., j] = (
                 np.sum(C_j, axis=0) /
-                (eps+np.sum(v[..., j, None, None], axis=0))
+                (eps+np.sum(v[..., j, None, None]**2, axis=(0, 2)))
             )
 
             # add some regularization to this estimate: normalize and add small
@@ -208,15 +214,6 @@ def expectation_maximization(v, x, iterations=2):
                 np.trace(R[..., j]) + eps * identity
             )
 
-            # 2. Udate the power spectral density estimate.
-            if not update_psd:
-                continue
-
-            """Rj_inv = invert(R[..., j], eps)
-            for (i1, i2) in itertools.product(*(range(nb_channels),)*2):
-                new_v[..., j] += 1./nb_channels*np.real(
-                    Rj_inv[None, :, i1, i2] * C_j_post[..., i2, i1]
-                )"""
 
     return y, v, R
 
@@ -247,7 +244,7 @@ def softmask(v, x):
     return v/(eps + total_energy) * x[..., None]
 
 
-def wiener(v, x,  update_psd=True, iterations=2):
+def wiener(v, x, iterations=2):
     """
     apply a multichannel wiener filter to x.
     the spatial statistics are estimated automatically with an EM algorithm,
@@ -270,4 +267,4 @@ def wiener(v, x,  update_psd=True, iterations=2):
         estimated sources
     """
 
-    return expectation_maximization(v, x, iterations, update_psd)[0]
+    return expectation_maximization(v, x, iterations)[0]
