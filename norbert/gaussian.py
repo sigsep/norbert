@@ -1,7 +1,6 @@
 import numpy as np
 import itertools
-import cv2
-
+from scipy.ndimage import gaussian_filter
 
 def invert(M, eps):
     """
@@ -139,7 +138,11 @@ def expectation_maximization(y, x, iterations=2, smoothing=True):
             if smoothing:
                 v[..., j] = np.minimum(
                                 vx,
-                                cv2.GaussianBlur(v[..., j], (3, 3), 0))
+                                gaussian_filter(
+                                    v[..., j],
+                                    sigma=1,
+                                    truncate=1)
+                                )
 
             # compute the covariance of the source
             Cj = np.zeros((nb_frames, nb_bins, nb_channels, nb_channels),
