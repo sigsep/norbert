@@ -2,6 +2,7 @@ import numpy as np
 import itertools
 from scipy.ndimage import gaussian_filter
 
+
 def invert(M, eps):
     """
     Inverting matrices
@@ -36,7 +37,7 @@ def invert(M, eps):
         invM[..., 1, 1] = invDet*M[..., 0, 0]
     else:
         # general case : no use of analytical expression (slow!)
-        invM = np.empyt_like(M)
+        invM = np.empty_like(M)
         for indices in itertools.product(*[range(x) for x in M.shape[:-2]]):
             invM[indices+(Ellipsis,)] = np.linalg.pinv(M[indices+(Ellipsis,)])
     return invM
@@ -67,8 +68,7 @@ def separate_one_source(v_j, R_j, inv_Cxx, x):
     # computes multichannel Wiener gain as v_j R_j inv_Cxx
     G = np.zeros_like(inv_Cxx)
     for (i1, i2, i3) in itertools.product(*(range(nb_channels),)*3):
-        G[..., i1, i2] += (R_j[None, :, i1, i3]
-                           * inv_Cxx[..., i3, i2])
+        G[..., i1, i2] += (R_j[None, :, i1, i3] * inv_Cxx[..., i3, i2])
     G *= v_j[..., None, None]
 
     # compute posterior average by (matrix-)multiplying this gain with the mix.

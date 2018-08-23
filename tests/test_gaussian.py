@@ -3,23 +3,28 @@ import pytest
 import norbert.gaussian as gaussian
 
 
-@pytest.fixture(params=[8, 64, 99])
+@pytest.fixture(params=[8, 11, 33])
 def nb_frames(request):
     return int(request.param)
 
 
-@pytest.fixture(params=[8, 64, 99])
+@pytest.fixture(params=[8, 11, 33])
 def nb_bins(request):
     return request.param
 
 
-@pytest.fixture(params=[1, 2])
+@pytest.fixture(params=[1, 2, 3])
 def nb_channels(request):
     return request.param
 
 
 @pytest.fixture(params=[1, 2, 4])
 def nb_sources(request):
+    return request.param
+
+
+@pytest.fixture(params=[True, False])
+def no_channels(request):
     return request.param
 
 
@@ -33,8 +38,11 @@ def X(request, nb_frames, nb_bins, nb_channels):
 
 
 @pytest.fixture
-def V(request, nb_frames, nb_bins, nb_channels, nb_sources):
-    return np.random.random((nb_frames, nb_bins, nb_channels, nb_sources))
+def V(request, nb_frames, nb_bins, nb_channels, nb_sources, no_channels):
+    if no_channels:
+        return np.random.random((nb_frames, nb_bins, nb_sources))
+    else:
+        return np.random.random((nb_frames, nb_bins, nb_channels, nb_sources))
 
 
 def test_shapes(X, V):
