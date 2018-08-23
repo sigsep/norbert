@@ -20,7 +20,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/sigsep/norbert',
-    author='Fabian-Robert Stoeter',
+    author='Fabian-Robert Stoeter, Antoine Liutkus',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -52,6 +52,6 @@ setup(
     # },
 
     project_urls={  # Optional
-        'Bug Reports': 'https://github.com/faroit/norbert/issues',
+        'Bug Reports': 'https://github.com/sigsep/norbert/issues',
     },
 )
