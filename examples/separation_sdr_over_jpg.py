@@ -23,31 +23,53 @@ class DF_writer(object):
 data = DF_writer(['track', 'SDR', 'percentile', 'size'])
 
 
-def oracle(track, separation_fn):
+def oracle(track, separation_fn, quantize_mixture=False):
     # set (trackwise) norbert objects
     tf = norbert.TF()
     ls = norbert.LogScaler()
     qt = norbert.Quantizer()
-    im = norbert.Coder(format='jpg', quality=80)
+    im = norbert.Coder(format='jpg', quality=85)
 
     # compute the mixture complex tf transform
     x = tf.transform(track.audio)
 
     # prepare the spectrograms of the sources
     # get maximum of mixture
-    ls.scale(np.sum(np.abs(x)**2, axis=-1))
+    x_c = np.sqrt(
+        np.sum(
+            np.abs(x)**2,
+            axis=-1, keepdims=True
+        )
+    )
+
+    x_c = ls.scale(x_c)
+    mixture_bounds = ls.bounds
+
+    if quantize_mixture:
+        x_c = qt.quantize(x_c)
+        x_c, file_size = im.encodedecode(x_c)
+
+        x_c = qt.dequantize(x_c)
+        x_c = ls.unscale(x_c)
+
+        x = np.multiply(x_c, np.exp(1j * np.angle(x)))
     # bounds = None
     v = []
     for name, value in track.sources.items():
-        v_j = np.sum(np.abs(tf.transform(value.audio))**2,
-                     axis=-1, keepdims=True)
+        v_j = np.sqrt(
+            np.sum(
+                np.abs(tf.transform(value.audio))**2,
+                axis=-1, keepdims=True
+            )
+        )
 
-        v_j = ls.scale(v_j)
+        v_j = ls.scale(v_j, bounds=mixture_bounds)
+
         v_j = qt.quantize(v_j)
-        # v_j, file_size = im.encodedecode(v_j)
+        v_j, file_size = im.encodedecode(v_j)
 
         v_j = qt.dequantize(v_j)
-        v_j = ls.unscale(v_j)
+        v_j = ls.unscale(v_j, bounds=mixture_bounds)
 
         v += [np.squeeze(v_j)]
 

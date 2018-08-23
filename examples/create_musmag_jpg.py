@@ -14,23 +14,24 @@ if __name__ == '__main__':
         tf = norbert.TF()
         ls = norbert.LogScaler()
         qt = norbert.Quantizer()
-        im = norbert.Coder(format='jpg', quality=80)
+        im = norbert.Coder(format='jpg', quality=85)
 
-        def pipeline(t, mono=False):
+        def pipeline(t, mono=True, bounds=None):
+            x = tf.transform(t.audio)
             if mono:
-                audio = np.atleast_2d(np.mean(t.audio, axis=1)).T
-            else:
-                audio = t.audio
+                x = np.sqrt(np.sum(np.abs(x)**2, axis=-1, keepdims=True))
 
             Q = qt.quantize(
                 ls.scale(
-                    tf.transform(audio)
+                    x,
+                    bounds=bounds
                 )
             )
             return Q
 
+        # quantize mixture
         Qm = pipeline(track)
-
+        mixture_bounds = ls.bounds
         track_estimate_dir = os.path.join(
             estimates_dir, track.subset, track.name
         )
@@ -38,8 +39,15 @@ if __name__ == '__main__':
             os.makedirs(track_estimate_dir)
 
         # write out tracks to disk
-
-        im.encode(Qm, os.path.join(track_estimate_dir, 'mix.jpg'))
+        im.encode(
+            Qm,
+            os.path.join(track_estimate_dir, 'mix.jpg'),
+            user_data={'bounds': mixture_bounds.tolist()}
+        )
         for name, value in track.targets.items():
-            Q = pipeline(value)
-            im.encode(Q, os.path.join(track_estimate_dir, name + '.jpg'))
+            Q = pipeline(value, bounds=mixture_bounds)
+            im.encode(
+                Q,
+                os.path.join(track_estimate_dir, name + '.jpg'),
+                user_data={'bounds': mixture_bounds.tolist()}
+            )
