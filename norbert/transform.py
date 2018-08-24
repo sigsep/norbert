@@ -11,7 +11,7 @@ class TF(object):
     n_hoverlap : int, optional
         FFT window overlap size, defaults to half of window size
     """
-    def __init__(self, fs=44100, n_fft=2048, n_overlap=None):
+    def __init__(self, fs=44100, n_fft=2048, n_overlap=1024):
         self.fs = fs
         self.n_fft = n_fft
         self.n_overlap = n_overlap
@@ -31,7 +31,7 @@ class TF(object):
         """
         self.input_shape = x.shape
         f, t, X = stft(x.T, nperseg=self.n_fft, noverlap=self.n_overlap)
-        return X.T
+        return X.T * self.n_fft
 
     def inverse_transform(self, X):
         """
@@ -47,8 +47,7 @@ class TF(object):
         """
 
         t, audio = istft(X.T, self.fs, noverlap=self.n_overlap)
-        audio = audio.T[:self.input_shape[0], :]
-        return audio
+        return audio.T[:self.input_shape[0], :] / self.n_fft
 
     def __call__(self, X, forward=True):
         if forward:
