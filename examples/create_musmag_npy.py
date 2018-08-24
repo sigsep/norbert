@@ -14,11 +14,11 @@ if __name__ == '__main__':
         tf = norbert.TF()
 
         def pipeline(t, mono=True, bounds=None):
-            x = tf.transform(t.audio)
+            x = np.abs(tf.transform(t.audio))
             if mono:
                 x = np.sqrt(np.sum(np.abs(x)**2, axis=-1, keepdims=True))
 
-            return S.astype(np.float32)
+            return x.astype(np.float32)
 
         X = pipeline(track)
 
