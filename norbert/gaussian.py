@@ -43,9 +43,10 @@ def invert(M, eps):
     return invM
 
 
-def separate_one_source(v_j, R_j, inv_Cxx, x):
+def _wiener_gain(v_j, R_j, inv_Cxx, x=None):
     """
     compute the wiener gain for separating one source and applies it to the mix
+    if provided
 
     Parameters
     ----------
@@ -55,11 +56,13 @@ def separate_one_source(v_j, R_j, inv_Cxx, x):
         spatial covariance matrix of the source
     inv_Cxx : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_channels)
         inverse of the mixture covariance
+    x : ndarray, shape (nb_frames, nb_bins, nb_channels)
+        mixture on which to apply the Wiener gain.
 
     Returns
     -------
     ndarray, shape=(nb_frames, nb_bins, nb_channels)
-        source estimate
+        source estimate if x is provided and not None
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)
         wiener filtering matrices
     """
@@ -71,12 +74,106 @@ def separate_one_source(v_j, R_j, inv_Cxx, x):
         G[..., i1, i2] += (R_j[None, :, i1, i3] * inv_Cxx[..., i3, i2])
     G *= v_j[..., None, None]
 
-    # compute posterior average by (matrix-)multiplying this gain with the mix.
-    mu = 0+0j
-    for i in range(nb_channels):
-        mu += G[..., i] * x[..., i, None]
+    if x is not None:
+        # apply the Wiener gain to the mix.
+        mu = 0+0j
+        for i in range(nb_channels):
+            mu += G[..., i] * x[..., i, None]
+        return mu, G
 
-    return mu, G
+    return G
+
+
+def _get_mix_model(v, R):
+    """
+    compute the covariance of a mixture based on local Gaussian models.
+    simply adds the v[..., j] * R[..., j]
+
+    Parameters
+    ----------
+    v : ndarray, shape (nb_frames, nb_bins, nb_sources)
+        Power spectral densities for the sources
+    R : ndarray, shape (nb_bins, nb_channels, nb_channels, nb_sources)
+          Spatial covariance matrices of each sources
+
+    Returns
+    -------
+    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)
+        Covariance matrix for the mixture
+    """
+    nb_channels = R.shape[1]
+    (nb_frames, nb_bins, nb_sources) = v.shape
+    Cxx = np.zeros((nb_frames, nb_bins, nb_channels, nb_channels), R.dtype)
+    for j in range(nb_sources):
+        Cxx += v[..., j, None, None] * R[None, ..., j]
+    return Cxx
+
+
+def _covariance(y_j):
+    """
+    compute the covariance for a source
+
+    Parameters
+    ----------
+    y_j : ndarray, shape (nb_frames, nb_bins, nb_channels).
+          complex stft of the source.
+
+    Returns
+    -------
+    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)
+        just y_j * conj(y_j'): empirical covariance for each TF bin.
+    """
+    (nb_frames, nb_bins, nb_channels) = y_j.shape
+    Cj = np.zeros((nb_frames, nb_bins, nb_channels, nb_channels),
+                  y_j.dtype)
+    for (i1, i2) in itertools.product(*(range(nb_channels),)*2):
+        Cj[..., i1, i2] += y_j[..., i1] * np.conj(y_j[..., i2])
+
+    return Cj
+
+
+def _get_local_gaussian_model(y_j, eps, vx_if_smoothing=None):
+    """
+    compute the local Gaussian model for a source from a mix. First get the
+    PSD, and then the spatial covariance matrix.
+
+    Parameters
+    ----------
+    y_j : ndarray, shape (nb_frames, nb_bins, nb_channels).
+          complex stft of the source.
+    eps : float
+        regularization term
+    vx_if_smoothing : ndarray, broadcastable to (nb_frames, nb_bins)
+        If provided, the PSD estimate will be smoothed, but will be
+        kept smaller than this, elementwise. The rationale is: the source PSD
+        should not be made bigger than the mix. If not provided, the source
+        PSD is not smoothed.
+    Returns
+    -------
+    ndarray, shape=(nb_frames, nb_bins)
+        PSD of the source
+    ndarray, shape=(nb_bins, nb_channels, nb_channels)
+        Spatial covariance matrix of the source
+    """
+    v_j = np.mean(np.abs(y_j)**2, axis=2)
+    if vx_if_smoothing is not None:
+        v_j = np.minimum(
+                        vx_if_smoothing,
+                        gaussian_filter(
+                            v_j,
+                            sigma=1,
+                            truncate=1)
+                        )
+
+    # compute the covariance of the source
+    C_j = _covariance(y_j)
+
+    # updates the spatial covariance matrix
+    R_j = (
+        np.sum(C_j, axis=0) /
+        (eps+np.sum(v_j[..., None, None], axis=0))
+    )
+    return v_j, R_j
 
 
 def expectation_maximization(y, x, iterations=2, smoothing=True):
@@ -111,18 +208,13 @@ def expectation_maximization(y, x, iterations=2, smoothing=True):
     (nb_frames, nb_bins, nb_channels) = x.shape
     nb_sources = y.shape[-1]
 
-    # define the identity matrx
-    identity = np.tile(np.eye(nb_channels, dtype=x.dtype)[None, ...],
-                       (nb_bins, 1, 1))
-
-    # initialize the spatial covariance matrices with identity
-    # R.shape is (nb_bins, nb_channels, nb_channels, nb_sources)
-    R = np.tile(identity[..., None], (1, 1, 1, nb_sources))
-
-    # initialize the results
+    # allocate the spatial covariance matrices and PSD
+    R = np.zeros((nb_bins, nb_channels, nb_channels, nb_sources), x.dtype)
     v = np.zeros((nb_frames, nb_bins, nb_sources))
 
-    vx = np.mean(np.abs(x)**2, axis=2)
+    if smoothing:
+        # if we smooth the PSD, compute the PSD of mix
+        vx = np.mean(np.abs(x)**2, axis=2)
 
     print('Number of iterations: ', iterations)
     for it in range(iterations):
@@ -132,40 +224,17 @@ def expectation_maximization(y, x, iterations=2, smoothing=True):
 
         for j in range(nb_sources):
             # update the spectrogram model for source j
-            v[..., j] = np.mean(
-                                np.abs(y[..., j])**2,
-                                axis=2)
-            if smoothing:
-                v[..., j] = np.minimum(
-                                vx,
-                                gaussian_filter(
-                                    v[..., j],
-                                    sigma=1,
-                                    truncate=1)
-                                )
+            v[..., j], R[..., j] = _get_local_gaussian_model(
+                                        y[..., j],
+                                        eps,
+                                        vx if smoothing else None)
 
-            # compute the covariance of the source
-            Cj = np.zeros((nb_frames, nb_bins, nb_channels, nb_channels),
-                          x.dtype)
-            for (i1, i2) in itertools.product(*(range(nb_channels),)*2):
-                Cj[..., i1, i2] += y[..., i1, j] * np.conj(y[..., i2, j])
-
-            # updates the spatial covariance matrix
-            R[..., j] = (
-                np.sum(Cj, axis=0) /
-                (eps+np.sum(v[..., j, None, None], axis=0))
-            )
-
-        Cxx = np.zeros((nb_frames, nb_bins, nb_channels, nb_channels), x.dtype)
-        for j in range(nb_sources):
-            Cxx += v[..., j, None, None] * R[None, ..., j]
+        Cxx = _get_mix_model(v, R)
         inv_Cxx = invert(Cxx, eps)
 
         # separate the sources
         for j in range(nb_sources):
-            y[..., j] = separate_one_source(
-                            v[..., j], R[..., j], inv_Cxx, x
-                        )[0]
+            y[..., j] = _wiener_gain(v[..., j], R[..., j], inv_Cxx, x)[0]
 
     return y, v, R
 
@@ -205,11 +274,9 @@ def wiener(v, x, iterations=2):
     Parameters
     ----------
     v : ndarrays, shape (nb_frames, nb_bins, [nb_channels], nb_sources)
-        spectrograms of the sources, homogeneous to magnitudes, optionally 4D.
+        spectrograms of the sources, optionally 4D.
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         mixture signal
-    update_psd : boolean
-        whether or not to also update the provided power spectral densities
     iterations: int
         number of iterations for the EM algorithm
 
