@@ -84,6 +84,16 @@ def _wiener_gain(v_j, R_j, inv_Cxx, x=None):
     return G
 
 
+def _identity(nb_bins, nb_channels, nb_sources):
+    # define the identity matrx
+    identity = np.tile(np.eye(nb_channels, dtype=np.complex64)[None, ...],
+                       (nb_bins, 1, 1))
+    # initialize the spatial covariance matrices with identity
+    # R.shape is (nb_bins, nb_channels, nb_channels, nb_sources)
+    R = np.tile(identity[..., None], (1, 1, 1, nb_sources))
+    return R
+
+
 def _get_mix_model(v, R):
     """
     compute the covariance of a mixture based on local Gaussian models.

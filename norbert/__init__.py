@@ -6,6 +6,7 @@ from . quantize import Quantizer
 from . image import Coder
 from . gaussian import wiener
 from . gaussian import softmask
+from . adhoc import add_residual_model
 
 
 class Processor(object):
