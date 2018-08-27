@@ -5,7 +5,7 @@ def _logit(W, threshold, slope):
     return 1./(1.0+np.exp(-slope*(W-threshold)))
 
 
-def add_residual_model(v, x, beta=1):
+def add_residual_model(v, x, alpha=1):
     """
     adds a model for the residual to the sources models v.
     obtained with simple spectral subtraction after matching the model
@@ -34,7 +34,7 @@ def add_residual_model(v, x, beta=1):
     (nb_frames, nb_bins, _, nb_sources) = v.shape
 
     # spectrogram for the mixture
-    vx = np.maximum(eps, np.abs(x)**2)
+    vx = np.maximum(eps, np.abs(x)**alpha)
 
     # compute the total model as provided
     v_total = np.sum(v, axis=-1)
