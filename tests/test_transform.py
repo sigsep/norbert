@@ -8,7 +8,7 @@ def nb_win(request):
     return request.param
 
 
-@pytest.fixture(params=[None])
+@pytest.fixture(params=[256, 512])
 def nb_hop(request):
     return request.param
 
@@ -34,7 +34,7 @@ def x(request, nb_samples, nb_channels):
 
 
 def test_reconstruction(x, rate, nb_win, nb_hop):
-    tf = transform.TF(fs=rate, n_fft=nb_win, n_overlap=nb_hop)
+    tf = transform.TF(fs=rate, n_fft=nb_win, n_hopsize=nb_hop)
 
     X = tf.transform(x)
     y = tf.inverse_transform(X)
@@ -44,7 +44,7 @@ def test_reconstruction(x, rate, nb_win, nb_hop):
 
 def test_copy(x, rate, nb_win, nb_hop):
     xo = np.copy(x)
-    tf = transform.TF(fs=rate, n_fft=nb_win, n_overlap=nb_hop)
+    tf = transform.TF(fs=rate, n_fft=nb_win, n_hopsize=nb_hop)
 
     _ = tf.transform(x)
     assert np.allclose(x, xo)
