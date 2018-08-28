@@ -6,6 +6,8 @@ import numpy as np
 
 estimates_dir = 'musmag-npy'
 
+targets_to_process = ['vocals', 'accompaniment']
+
 if __name__ == '__main__':
     mus = musdb.DB()
     tracks = mus.load_mus_tracks()
@@ -32,5 +34,6 @@ if __name__ == '__main__':
 
         np.save(os.path.join(track_estimate_dir, 'mix.npy'), X)
         for name, track in track.targets.items():
-            S = pipeline(track)
-            np.save(os.path.join(track_estimate_dir, name + '.npy'), S)
+            if name in targets_to_process:
+                S = pipeline(track)
+                np.save(os.path.join(track_estimate_dir, name + '.npy'), S)

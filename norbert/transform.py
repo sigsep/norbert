@@ -7,11 +7,11 @@ class TF(object):
     Parameters
     ----------
     n_fft : int, optional
-        FFT window size, defaults to `2048`
+        FFT window size, defaults to `4096`
     n_hoverlap : int, optional
         FFT window overlap size, defaults to half of window size
     """
-    def __init__(self, fs=44100, n_fft=2048, n_overlap=1024):
+    def __init__(self, fs=44100, n_fft=4096, n_overlap=1024):
         self.fs = fs
         self.n_fft = n_fft
         self.n_overlap = n_overlap
