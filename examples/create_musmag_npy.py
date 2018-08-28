@@ -3,10 +3,11 @@ import musdb
 import tqdm
 import os
 import numpy as np
+tqdm.monitor_interval = 0
 
 estimates_dir = 'musmag-npy'
 
-targets_to_process = ['vocals', 'accompaniment']
+targets_to_process = ['vocals', 'drums', 'other', 'bass', 'accompaniment']
 
 if __name__ == '__main__':
     mus = musdb.DB()
