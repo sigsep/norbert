@@ -11,10 +11,10 @@ class TF(object):
     n_hoverlap : int, optional
         FFT window overlap size, defaults to half of window size
     """
-    def __init__(self, fs=44100, n_fft=4096, n_overlap=1024):
+    def __init__(self, fs=44100, n_fft=4096, n_hopsize=1024):
         self.fs = fs
         self.n_fft = n_fft
-        self.n_overlap = n_overlap
+        self.n_overlap = n_fft - n_hopsize
         self.input_shape = None
 
     def transform(self, x):
