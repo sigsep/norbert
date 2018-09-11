@@ -186,7 +186,7 @@ def _get_local_gaussian_model(y_j, eps, vx_if_smoothing=None):
     return v_j, R_j
 
 
-def expectation_maximization(y, x, iterations=2, smoothing=True):
+def expectation_maximization(y, x, iterations=2, smoothing=False):
     """
     expectation maximization, with initial values provided for the sources
     power spectral densities.
@@ -201,6 +201,8 @@ def expectation_maximization(y, x, iterations=2, smoothing=True):
         number of iterations for the EM algorithm. 1 means processing the
         channels independently with the same filter. More means computing
         spatial statistics.
+    smoothing: bool
+        enable gaussian smoothing of the PSD estimate, defaults to `False`
 
     Returns
     -------
@@ -275,7 +277,7 @@ def softmask(v, x):
     return v/(eps + total_energy) * x[..., None]
 
 
-def wiener(v, x, iterations=2):
+def wiener(v, x, iterations=2, smoothing=False):
     """
     apply a multichannel wiener filter to x.
     the spatial statistics are estimated automatically with an EM algorithm,
@@ -298,5 +300,5 @@ def wiener(v, x, iterations=2):
 
     y = softmask(v, x)
     if iterations:
-        y = expectation_maximization(y, x, iterations)[0]
+        y = expectation_maximization(y, x, iterations, smoothing)[0]
     return y
