@@ -214,7 +214,7 @@ def expectation_maximization(y, x, iterations=2, smoothing=False):
         estimated spatial covariance matrices
     """
     # to avoid dividing by zero
-    eps = np.finfo(np.float).eps
+    eps = np.finfo(np.float32).eps
 
     # dimensions
     (nb_frames, nb_bins, nb_channels) = x.shape
@@ -270,7 +270,7 @@ def softmask(v, x):
         estimated sources
     """
     # to avoid dividing by zero
-    eps = np.finfo(np.float).eps
+    eps = np.finfo(np.float32).eps
     if len(v.shape) == 3:
         v = v[..., None, :]
     total_energy = np.sum(v, axis=-1, keepdims=True)
