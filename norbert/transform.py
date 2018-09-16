@@ -46,8 +46,8 @@ class TF(object):
             time domain audio signal
         """
 
-        t, audio = istft(X.T, self.fs, noverlap=self.n_overlap)
-        return audio.T[:self.input_shape[0], :] / self.n_fft
+        t, audio = istft(X.T / self.n_fft, self.fs, noverlap=self.n_overlap)
+        return audio.T[:self.input_shape[0], :]
 
     def __call__(self, X, forward=True):
         if forward:
