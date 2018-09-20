@@ -1,6 +1,6 @@
 import numpy as np
 import itertools
-from scipy.ndimage import gaussian_filter
+from .adhoc import compress_filter, smooth, reduce_interferences
 
 
 def invert(M, eps):
@@ -43,10 +43,9 @@ def invert(M, eps):
     return invM
 
 
-def _wiener_gain(v_j, R_j, inv_Cxx, x=None):
+def _wiener_gain(v_j, R_j, inv_Cxx):
     """
-    compute the wiener gain for separating one source and applies it to the mix
-    if provided
+    compute the wiener gain for separating one source
 
     Parameters
     ----------
@@ -73,15 +72,32 @@ def _wiener_gain(v_j, R_j, inv_Cxx, x=None):
     for (i1, i2, i3) in itertools.product(*(range(nb_channels),)*3):
         G[..., i1, i2] += (R_j[None, :, i1, i3] * inv_Cxx[..., i3, i2])
     G *= v_j[..., None, None]
-
-    if x is not None:
-        # apply the Wiener gain to the mix.
-        mu = 0+0j
-        for i in range(nb_channels):
-            mu += G[..., i] * x[..., i, None]
-        return mu, G
-
     return G
+
+
+def _apply_filter(x, W):
+    """
+    applies a filter on the mixture
+
+    Parameters
+    ----------
+    x : ndarray, shape (nb_frames, nb_bins, nb_channels)
+        signal on which to apply the filter.
+    W: ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)
+        filtering matrices
+
+    Returns
+    -------
+    ndarray, shape=(nb_frames, nb_bins, nb_channels)
+        filtered signal
+    """
+    nb_channels = W.shape[-1]
+
+    # apply the filter
+    result = 0+0j
+    for i in range(nb_channels):
+        result += W[..., i] * x[..., i, None]
+    return result
 
 
 def _identity(nb_bins, nb_channels, nb_sources):
@@ -97,7 +113,7 @@ def _identity(nb_bins, nb_channels, nb_sources):
 def _get_mix_model(v, R):
     """
     compute the covariance of a mixture based on local Gaussian models.
-    simply adds the v[..., j] * R[..., j]
+    simply adds up all the v[..., j] * R[..., j]
 
     Parameters
     ----------
@@ -142,9 +158,9 @@ def _covariance(y_j):
     return Cj
 
 
-def _get_local_gaussian_model(y_j, eps, vx_if_smoothing=None):
+def _get_local_gaussian_model(y_j, eps, smoothing=False, vx=None):
     """
-    compute the local Gaussian model for a source from a mix. First get the
+    compute the local Gaussian model for a source. First get the
     PSD, and then the spatial covariance matrix.
 
     Parameters
@@ -153,11 +169,12 @@ def _get_local_gaussian_model(y_j, eps, vx_if_smoothing=None):
           complex stft of the source.
     eps : float
         regularization term
-    vx_if_smoothing : ndarray, broadcastable to (nb_frames, nb_bins)
-        If provided, the PSD estimate will be smoothed, but will be
+    smoothing : boolean
+        if True, the PSD estimate will be smoothed by a (3x3) Gaussian blur.
+    vx : ndarray, broadcastable to (nb_frames, nb_bins)
+        If provided and if `smoothing` is True, the smoothed PSD will be
         kept smaller than this, elementwise. The rationale is: the source PSD
-        should not be made bigger than the mix. If not provided, the source
-        PSD is not smoothed.
+        should not be made bigger than the mix.
     Returns
     -------
     ndarray, shape=(nb_frames, nb_bins)
@@ -166,14 +183,10 @@ def _get_local_gaussian_model(y_j, eps, vx_if_smoothing=None):
         Spatial covariance matrix of the source
     """
     v_j = np.mean(np.abs(y_j)**2, axis=2)
-    if vx_if_smoothing is not None:
-        v_j = np.minimum(
-                        vx_if_smoothing,
-                        gaussian_filter(
-                            v_j,
-                            sigma=1,
-                            truncate=1)
-                        )
+    if smoothing:
+        v_j = smooth(v_j)
+        if vx is not None:
+            v_j = np.minimum(v_j, vx)
 
     # compute the covariance of the source
     C_j = _covariance(y_j)
@@ -186,7 +199,9 @@ def _get_local_gaussian_model(y_j, eps, vx_if_smoothing=None):
     return v_j, R_j
 
 
-def expectation_maximization(y, x, iterations=2, smoothing=False):
+def expectation_maximization(y, x,
+                             iterations=2,
+                             smoothing=False):
     """
     expectation maximization, with initial values provided for the sources
     power spectral densities.
@@ -202,8 +217,7 @@ def expectation_maximization(y, x, iterations=2, smoothing=False):
         channels independently with the same filter. More means computing
         spatial statistics.
     smoothing: bool
-        enable gaussian smoothing of the PSD estimate, defaults to `False`
-
+        enable blurring of the PSD estimate during optim, defaults to `False`
     Returns
     -------
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
@@ -239,19 +253,20 @@ def expectation_maximization(y, x, iterations=2, smoothing=False):
             v[..., j], R[..., j] = _get_local_gaussian_model(
                                         y[..., j],
                                         eps,
-                                        vx if smoothing else None)
+                                        smoothing, vx if smoothing else None)
 
         Cxx = _get_mix_model(v, R)
         inv_Cxx = invert(Cxx, eps)
 
         # separate the sources
         for j in range(nb_sources):
-            y[..., j] = _wiener_gain(v[..., j], R[..., j], inv_Cxx, x)[0]
+            W_j = _wiener_gain(v[..., j], R[..., j], inv_Cxx)
+            y[..., j] = _apply_filter(x, W_j)
 
     return y, v, R
 
 
-def softmask(v, x):
+def softmask(v, x, logit=None):
     """
     apply simple ratio mask on all the channels of x, independently,
     using the values provided for the sources spectrograms for
@@ -263,6 +278,10 @@ def softmask(v, x):
         spectrograms of the sources
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         mixture signal
+    logit: None or float between 0 and 1
+        enable a compression of the filter, defaults to `None`. If not None,
+        gives the point above which the filter is brought closer to 1, and
+        under which it is brought closer to 0.
 
     Returns
     -------
@@ -274,10 +293,13 @@ def softmask(v, x):
     if len(v.shape) == 3:
         v = v[..., None, :]
     total_energy = np.sum(v, axis=-1, keepdims=True)
-    return v/(eps + total_energy) * x[..., None]
+    filter = v/(eps + total_energy)
+    if logit is not None:
+        filter = compress_filter(filter, eps, thresh=logit, multichannel=False)
+    return filter * x[..., None]
 
 
-def wiener(v, x, iterations=2, smoothing=False):
+def wiener(v, x, iterations=2, smoothing=False, logit=None):
     """
     apply a multichannel wiener filter to x.
     the spatial statistics are estimated automatically with an EM algorithm,
@@ -291,14 +313,19 @@ def wiener(v, x, iterations=2, smoothing=False):
         mixture signal
     iterations: int
         number of iterations for the EM algorithm
+    smoothing: boolean
+        whether or not to slightly smooth the spectrograms during EM
+    logit: None or float between 0 and 1
+        enable a compression of the initial softmask filter, see the doc for
+        softmask.
 
     Returns
     -------
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
         estimated sources
     """
+    y = softmask(v, x, logit)
 
-    y = softmask(v, x)
     if iterations:
         y = expectation_maximization(y, x, iterations, smoothing)[0]
     return y

@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.ndimage import gaussian_filter
 
 
 def _logit(W, threshold, slope):
@@ -51,3 +52,82 @@ def add_residual_model(v, x, alpha=1):
     vr = np.maximum(0, vx - v_total)
 
     return np.concatenate((v, vr[..., None]), axis=3)
+
+
+def smooth(v):
+    """
+    smooth a nonnegative ndarray. Simply apply a small Gaussian blur
+    """
+    return gaussian_filter(v, sigma=1, truncate=1)
+
+
+def reduce_interferences(v,  thresh=0.6, slope=15):
+    """
+    reduce interferences between spectrograms with logit compression.
+    see:
+    @inproceedings{pratzlich2015kernel,
+        title={Kernel additive modeling for interference reduction in multi-channel music recordings},
+        author={Pr{\"a}tzlich, Thomas and Bittner, Rachel M and Liutkus, Antoine and M{\"u}ller, Meinard},
+        booktitle={Acoustics, Speech and Signal Processing (ICASSP), 2015 IEEE International Conference on},
+        pages={584--588},
+        year={2015},
+        organization={IEEE}
+    }
+
+    Parameters
+    ----------
+    v : ndarray, shape=(..., nb_sources)
+        non-negative data on which to apply interference reduction
+    thresh : float
+        threshold for the compression, should be between 0 and 1. The closer
+        to 1, the more distortion but the less interferences, hopefully
+    slope : float
+        the slope at which binarization is done. The higher, the more brutal
+
+    Returns
+    -------
+    ndarray, Same shape as the filter provided. `v` with reduced interferences
+    """
+    eps = np.finfo(np.float32).eps
+    total_energy = eps + np.sum(v, axis=-1, keepdims=True)
+    #total_energy = smooth(total_energy)
+    v = _logit(v/total_energy, 0.4, 15) * v
+    return v
+
+
+def compress_filter(W, eps, thresh=0.6, slope=15, multichannel=True):
+    """
+    Applies a logit compression to a filter.
+
+    Parameters
+    ----------
+    W : ndarray, arbitrary shape
+        filter on which to apply logit compression. if `multichannel` is False,
+        it should be real values between 0 and 1.
+    thresh : float
+        threshold for the compression, should be between 0 and 1. The closer
+        to 1, the more distortion but the less interferences, hopefully
+    slope : float
+        the slope at which binarization is done. The higher, the more brutal
+    multichannel : boolean
+        indicate whether we decompose the filter as a beamforming and single
+        channel part. In such a case, filter must be of shape
+        (nb_frames, nb_bins, [nb_channels, nb_channels]), so either 2D or 4D.
+        if it's 2D, it's like multichannel=False. If it's
+        4D, the last two dimensions have to be equal.
+
+    Returns
+    -------
+    ndarray, shape=(nb_frames, nb_bins, [nb_channels, nb_channels])
+        Same shape as the filter provided. Compressed filter
+    """
+    if W.shape[-1] != W.shape[-2]:
+        multichannel = False
+    if multichannel:
+        if len(W.shape) == 2:
+            W = W[..., None, None]
+        gains = np.trace(W, axis1=2, axis2=3)
+        W *= (_logit(gains, thresh, slope) / (eps + gains))[..., None, None]
+    else:
+        W = _logit(W, thresh, slope)
+    return W
