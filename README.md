@@ -31,6 +31,10 @@ is an audio I/O toolbox for effiently transform, store and filter audio spectrog
 
 ### Image
 
+
+![mix](https://user-images.githubusercontent.com/72940/45908846-ef5d1d80-bdfe-11e8-8531-3d30b1c98db9.jpg)
+
+
 We have tested _norbert_ in the context of source separation models where the actual filtering is applied using the original mixture phase, thus reducing the influence of minor imperfections of the magnitude. We used the [PEAQ objective audio quality evaluation](example/jpg_quality_experiment.py) to assess the quality difference in a setting where we  compress the magnitude of and audio signal and synthesize using the decoded (but compressed) magnitude together with the original uncompressed mixture phase. The results on 50 music tracks from the [MUSDB18](sigsep.github.io/musdb18) dataset shows, that with the right JPG quality parameter (we pick `80` as our default), difference between the compressed magnitude and the original magnitude are almost imperceptable.
 
 ![stereo](https://user-images.githubusercontent.com/72940/41040263-2f0a08ba-699c-11e8-9d73-c52e7d04aa25.png)
