@@ -13,6 +13,12 @@ is an audio I/O toolbox for effiently transform, store and filter audio spectrog
 * Quantization
 * Image export
 
+## Applications
+
+* Source Separtion
+* Data Prepreprocessing for audio tasks
+* Create beautiful Spectrograms
+
 ## Installation
 
 `pip install norbert`
