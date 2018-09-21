@@ -6,22 +6,31 @@ from . quantize import Quantizer
 from . image import Coder
 from . gaussian import wiener
 from . gaussian import softmask
-from . adhoc import add_residual_model
+from . contrib import residual
 
 
 class Processor(object):
-    """docstring for Processor."""
-    def __init__(self):
+    """Pipeline Processor for invertible norbert Modules
+
+    The processor takes a pipeline as a list of norbert modules and
+    allows to conveniently compute the forward and backward path.
+
+    Parameters
+    ----------
+    pipeline : list of norbert objects
+
+    Examples
+    --------
+    >>> p = norbert.Processor([norbert.TF(), norbert.LogScaler()])
+    >>> Xc = p.forward(X)
+    >>> y = p.backward(Xc)
+
+    """
+    def __init__(self, pipeline):
         super(Processor, self).__init__()
         # set up modules
 
-        self.tf = TF()
-        self.bw = BandwidthLimiter()
-        self.ls = LogScaler()
-        self.qt = Quantizer()
-        self.pipeline = [
-            self.tf, self.bw, self.ls, self.qt
-        ]
+        self.pipeline = pipeline
 
     def forward(self, input):
         output = input
@@ -34,4 +43,3 @@ class Processor(object):
         for module in reversed(self.pipeline):
             output = module(output, backward=True)
         return output
-__version__ = "0.1.1"
