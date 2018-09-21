@@ -20,12 +20,6 @@ class Processor(object):
     ----------
     pipeline : list of norbert objects
 
-    Examples
-    --------
-    >>> p = norbert.Processor([norbert.TF(), norbert.LogScaler()])
-    >>> Xc = p.forward(X)
-    >>> y = p.backward(Xc)
-
     """
     def __init__(self, pipeline):
         super(Processor, self).__init__()
