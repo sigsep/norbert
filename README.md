@@ -7,10 +7,11 @@ is an audio I/O toolbox for effiently transform, store and filter audio spectrog
 ## Features
 
 * Multichannel Time-Frequency Transform (STFT)
-* Generalized Multi-channel Wiener Filter
+* Generalized Multi-channel __Wiener__ Filter
 * Log Magnitude compression
 * Bandwidth reduction
-* Invertible Quantization
+* Quantization
+* Image export
 
 ## Installation
 
