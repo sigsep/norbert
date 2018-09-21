@@ -1,4 +1,6 @@
 # Norbert
+![norbert-wiener](https://user-images.githubusercontent.com/72940/45908695-15ce8900-bdfe-11e8-8420-78ad9bb32f84.jpg) 
+
 
 is an audio I/O toolbox for effiently transform, store and filter audio spectrograms, especially suited for machine learning tasks that rely on non-negative data such as in source separation. In turn, _Norbert_ does use an optimized pipeline to transform and scale audio signals and then apply lossy compression to save them efficiently as source images. This makes it an ideal fit to process music data with machine learning libraries such as [PyTorch](pytorch.org) and [Tensorflow](tensorflow.org) that have fast, builtin support to load and process images. Last but not least, Norbert provides convenient functions to easily apply multichannel Wiener filtering to the sepearated sources. 
 
