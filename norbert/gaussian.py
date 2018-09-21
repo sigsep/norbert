@@ -1,6 +1,6 @@
 import numpy as np
 import itertools
-from .adhoc import compress_filter, smooth, reduce_interferences
+from .filtering import compress_filter, smooth
 
 
 def invert(M, eps):

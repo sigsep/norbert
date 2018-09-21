@@ -19,7 +19,7 @@ if __name__ == '__main__':
     tf = norbert.TF()
     ls = norbert.LogScaler()
     qt = norbert.Quantizer()
-    im = norbert.Coder(format='jpg', quality=80)
+    im = norbert.Coder(format='jpg', quality=85)
 
     """
     forward path

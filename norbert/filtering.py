@@ -6,7 +6,7 @@ def _logit(W, threshold, slope):
     return 1./(1.0+np.exp(-slope*(W-threshold)))
 
 
-def add_residual_model(v, x, alpha=1):
+def residual(v, x, alpha=1):
     """
     adds a model for the residual to the sources models v.
     obtained with simple spectral subtraction after matching the model
@@ -43,8 +43,8 @@ def add_residual_model(v, x, alpha=1):
     # quick trick to scale the provided spectrogram to fit the mixture where
     # the model has significant energy
     gain = (
-        np.sum(vx*v_total, axis=0, keepdims=True)
-        / (eps+np.sum(v_total**2, axis=0, keepdims=True)))
+        np.sum(vx*v_total, axis=0, keepdims=True) /
+        (eps+np.sum(v_total**2, axis=0, keepdims=True)))
     v *= gain[..., None]
     v_total *= gain
 
@@ -61,18 +61,11 @@ def smooth(v):
     return gaussian_filter(v, sigma=1, truncate=1)
 
 
-def reduce_interferences(v,  thresh=0.6, slope=15):
+def reduce_interferences(v, thresh=0.6, slope=15):
     """
     reduce interferences between spectrograms with logit compression.
-    see:
-    @inproceedings{pratzlich2015kernel,
-        title={Kernel additive modeling for interference reduction in multi-channel music recordings},
-        author={Pr{\"a}tzlich, Thomas and Bittner, Rachel M and Liutkus, Antoine and M{\"u}ller, Meinard},
-        booktitle={Acoustics, Speech and Signal Processing (ICASSP), 2015 IEEE International Conference on},
-        pages={584--588},
-        year={2015},
-        organization={IEEE}
-    }
+    See [1]_.
+
 
     Parameters
     ----------
@@ -87,10 +80,14 @@ def reduce_interferences(v,  thresh=0.6, slope=15):
     Returns
     -------
     ndarray, Same shape as the filter provided. `v` with reduced interferences
+
+    .. [1] Thomas Prätzlich, Rachel Bittner, Antoine Liutkus, Meinard Müller.
+           "Kernel additive modeling for interference reduction in multi-
+           channel music recordings" Proc. of ICASSP 2015.
+
     """
     eps = np.finfo(np.float32).eps
     total_energy = eps + np.sum(v, axis=-1, keepdims=True)
-    #total_energy = smooth(total_energy)
     v = _logit(v/total_energy, 0.4, 15) * v
     return v
 

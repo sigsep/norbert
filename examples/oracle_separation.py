@@ -10,7 +10,7 @@ def oracle(track, separation_fn):
     tf = norbert.TF()
     ls = norbert.LogScaler()
     qt = norbert.Quantizer()
-    im = norbert.Coder(format='jpg', quality=80)
+    im = norbert.Coder(format='jpg', quality=85)
 
     # compute the mixture complex tf transform
     x = tf.transform(track.audio)
