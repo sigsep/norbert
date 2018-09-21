@@ -7,6 +7,7 @@ from . image import Coder
 from . gaussian import wiener
 from . gaussian import softmask
 from . contrib import residual
+from . cli import audio2img
 
 
 class Processor(object):

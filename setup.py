@@ -46,11 +46,11 @@ setup(
         'tests': ['pytest', 'coverage', 'pytest-cov', 'pytest-pep8'],
     },
 
-    # entry_points={
-    #     'console_scripts': [
-    #         'norbert=norbert:quantize',
-    #     ],
-    # },
+    entry_points={
+        'console_scripts': [
+            'audio2img=norbert.cli:audio2img',
+        ],
+    },
 
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/sigsep/norbert/issues',

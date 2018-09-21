@@ -6,6 +6,7 @@ import piexif.helper
 import json
 import os
 
+
 eps = np.finfo(np.float).eps
 
 
