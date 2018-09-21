@@ -84,22 +84,26 @@ class Coder(object):
             )
 
     def decode(self, buf):
-        img = Image.open(buf)
-        try:
-            exif_data = img._getexif()
-            user_json = piexif.helper.UserComment.load(
-                exif_data[piexif.ExifIFD.UserComment]
-            )
-            user_data = json.loads(user_json)
-        except (TypeError, AttributeError) as e:
-            user_data = None
+        return read(buf)
 
-        img = np.array(img).astype(np.uint8)
-        # inverse flipped image
-        img = img[::-1, ...]
-        if img.ndim <= 2:
-            return np.atleast_3d(img).swapaxes(0, 1), user_data
-        else:
-            img = img.swapaxes(0, 1)
-            # select only red and blue channels
-            return img[:, :, [0, 1]], user_data
+
+def read(buf):
+    img = Image.open(buf)
+    try:
+        exif_data = img._getexif()
+        user_json = piexif.helper.UserComment.load(
+            exif_data[piexif.ExifIFD.UserComment]
+        )
+        user_data = json.loads(user_json)
+    except (TypeError, AttributeError) as e:
+        user_data = None
+
+    img = np.array(img).astype(np.uint8)
+    # inverse flipped image
+    img = img[::-1, ...]
+    if img.ndim <= 2:
+        return np.atleast_3d(img).swapaxes(0, 1), user_data
+    else:
+        img = img.swapaxes(0, 1)
+        # select only red and blue channels
+        return img[:, :, [0, 1]], user_data

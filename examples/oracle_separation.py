@@ -16,7 +16,6 @@ def oracle(track, separation_fn):
     x = tf.transform(track.audio)
 
     # prepare the spectrograms of the sources
-    # get maximum of mixture
     ls.scale(np.sum(np.abs(x)**2, axis=-1))
     # bounds = None
     v = []

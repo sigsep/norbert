@@ -34,3 +34,4 @@ class Processor(object):
         for module in reversed(self.pipeline):
             output = module(output, backward=True)
         return output
+__version__ = "0.1.1"
