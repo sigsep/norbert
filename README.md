@@ -27,6 +27,14 @@ is an audio I/O toolbox for effiently transform, store and filter audio spectrog
 
 ### Transform
 
+Norbert includes a multichannel short-time Fourier transform by wrapping the builtin scipy implementation. For convenience the transform parameters are stored in the `norbert.TF` object. That way, the inverse transform can easily be called later.
+
+```
+tf = norbert.TF(n_fft=2048, n_hop=1024)
+X = tf.transform(audio)
+inverse = tf.inverse_transform(X)
+```
+
 ### Filtering
 
 ### Compression
