@@ -35,7 +35,7 @@ if [ ! -d "$src" ]; then
         source activate $ENV_NAME
         pip install setuptools --upgrade
         pip install python-coveralls
-
+        pip install coverage>=4.4
         source deactivate
     popd
 else
