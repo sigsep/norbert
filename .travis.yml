@@ -24,6 +24,8 @@ install:
   # install your own package into the environment
   # pip install -e rather than setup.py, so that coverage can find the source
   - pip install -e .[tests]
+  - pip install coverage>=4.4 --upgrade
+
 
 script:
   - py.test
