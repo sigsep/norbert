@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import norbert.transform as transform
+from norbert import Processor
 
 
 @pytest.fixture(params=[1024, 2048])
@@ -48,3 +49,10 @@ def test_copy(x, rate, nb_win, nb_hop):
 
     _ = tf.transform(x)
     assert np.allclose(x, xo)
+
+
+def test_processor(x, rate, nb_win, nb_hop):
+    tf = transform.TF(fs=rate, n_fft=nb_win, n_hopsize=nb_hop)
+    pipe = Processor([tf])
+    y = pipe.backward(pipe.forward(x))
+    assert np.allclose(x, y)

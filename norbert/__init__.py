@@ -36,5 +36,5 @@ class Processor(object):
     def backward(self, input):
         output = input
         for module in reversed(self.pipeline):
-            output = module(output, backward=True)
+            output = module(output, forward=False)
         return output
