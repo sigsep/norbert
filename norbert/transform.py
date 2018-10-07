@@ -14,7 +14,7 @@ class TF(object):
     def __init__(self, fs=44100, n_fft=4096, n_hopsize=1024):
         self.fs = fs
         self.n_fft = n_fft
-        self.n_overlap = n_fft - n_hopsize
+        self.n_hopsize = n_hopsize
         self.input_shape = None
 
     def transform(self, x):
@@ -30,7 +30,9 @@ class TF(object):
             complex STFT
         """
         self.input_shape = x.shape
-        f, t, X = stft(x.T, nperseg=self.n_fft, noverlap=self.n_overlap)
+        f, t, X = stft(
+            x.T, nperseg=self.n_fft, noverlap=self.n_fft - self.n_hopsize
+        )
         return X.T * self.n_fft
 
     def inverse_transform(self, X):
@@ -46,7 +48,9 @@ class TF(object):
             time domain audio signal
         """
 
-        t, audio = istft(X.T / self.n_fft, self.fs, noverlap=self.n_overlap)
+        t, audio = istft(
+            X.T / self.n_fft, self.fs, noverlap=self.n_fft - self.n_hopsize
+        )
         return audio.T[:self.input_shape[0], :]
 
     def __call__(self, X, forward=True):
