@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='norbert',
-    version='0.1.0b',
+    version='0.1.0c',
     description='Spectrogram Models',
     long_description=long_description,
     long_description_content_type='text/markdown',

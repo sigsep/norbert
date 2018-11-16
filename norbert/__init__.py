@@ -18,13 +18,13 @@ class Processor(object):
 
     Parameters
     ----------
-    pipeline : list of norbert objects
+    pipeline : list of norbert modules
 
     """
     def __init__(self, pipeline):
         super(Processor, self).__init__()
-        # set up modules
 
+        # set up modules
         self.pipeline = pipeline
 
     def forward(self, input):
