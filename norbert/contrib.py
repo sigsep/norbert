@@ -1,14 +1,15 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 def _logit(W, threshold, slope):
-    return 1./(1.0+np.exp(-slope*(W-threshold)))
+    return 1. / (1.0 + np.exp(-slope*(W-threshold)))
 
 
 def residual(v, x, alpha=1):
     """
-    adds a model for the residual to the sources models v.
+    A model for the residual to the sources models v.
     obtained with simple spectral subtraction after matching the model
     with the mixture as best as possible, frequency wise
 
@@ -54,11 +55,11 @@ def residual(v, x, alpha=1):
     return np.concatenate((v, vr[..., None]), axis=3)
 
 
-def smooth(v):
+def smooth(v, width=1):
     """
     smooth a nonnegative ndarray. Simply apply a small Gaussian blur
     """
-    return gaussian_filter(v, sigma=1, truncate=1)
+    return gaussian_filter(v, sigma=width, truncate=width)
 
 
 def reduce_interferences(v, thresh=0.6, slope=15):
@@ -87,14 +88,14 @@ def reduce_interferences(v, thresh=0.6, slope=15):
 
     """
     eps = np.finfo(np.float32).eps
-    total_energy = eps + np.sum(v, axis=-1, keepdims=True)
-    v = _logit(v/total_energy, 0.4, 15) * v
+    vsmooth = smooth(v, 10)
+    total_energy = eps + np.sum(vsmooth, axis=-1, keepdims=True)
+    v = _logit(vsmooth/total_energy, 0.4, 15) * v
     return v
 
 
 def compress_filter(W, eps, thresh=0.6, slope=15, multichannel=True):
-    """
-    Applies a logit compression to a filter.
+    '''Applies a logit compression to a filter.
 
     Parameters
     ----------
@@ -117,7 +118,8 @@ def compress_filter(W, eps, thresh=0.6, slope=15, multichannel=True):
     -------
     ndarray, shape=(nb_frames, nb_bins, [nb_channels, nb_channels])
         Same shape as the filter provided. Compressed filter
-    """
+    '''
+
     if W.shape[-1] != W.shape[-2]:
         multichannel = False
     if multichannel:
@@ -128,253 +130,3 @@ def compress_filter(W, eps, thresh=0.6, slope=15, multichannel=True):
     else:
         W = _logit(W, thresh, slope)
     return W
-
-
-
-import numpy as np
-import itertools
-
-
-def splitinfo(sigShape, frameShape, hop):
-
-    # making sure input shapes are tuples, not simple integers
-    if np.isscalar(frameShape):
-        frameShape = (frameShape,)
-    if np.isscalar(hop):
-        hop = (hop,)
-
-    # converting frameShape to array, and building an aligned frameshape,
-    # which is 1 whenever the frame dimension is not given. For instance, if
-    # frameShape=(1024,) and sigShape=(10000,2), frameShapeAligned is set
-    # to (1024,1)
-    frameShape = np.array(frameShape)
-    fdim = len(frameShape)
-    frameShapeAligned = np.append(
-        frameShape, np.ones(
-            (len(sigShape) - len(frameShape)))).astype(int)
-
-    # same thing for hop
-    hop = np.array(hop)
-    hop = np.append(hop, np.ones((len(sigShape) - len(hop)))).astype(int)
-
-    # building the positions of the frames. For each dimension, gridding from
-    # 0 to sigShape[dim] every hop[dim]
-    framesPos = np.ogrid[[slice(0, size, step)
-                          for (size, step) in zip(sigShape, hop)]]
-
-    # number of dimensions
-    nDim = len(framesPos)
-
-    # now making sure we have at most one frame going out of the signal. This
-    # is possible, for instance if the overlap is very large between the frames
-    for dim in range(nDim):
-        # for each dimension, we remove all frames that go beyond the signal
-        framesPos[dim] = framesPos[dim][
-            np.nonzero(
-                np.add(
-                    framesPos[dim],
-                    frameShapeAligned[dim]) < sigShape[dim])]
-        # are there frames positions left in this dimension ?
-        if len(framesPos[dim]):
-            # yes. we then add a last frame (the one going beyond the signal),
-            # if it is possible. (it may NOT be possible in some exotic cases
-            # such as hopSize[dim]>1 and frameShapeAligned[dim]==1
-            if framesPos[dim][-1] + hop[dim] < sigShape[dim]:
-                framesPos[dim] = np.append(
-                    framesPos[dim], framesPos[dim][-1] + hop[dim])
-        else:
-            # if there is no more frames in this dimension (short signal in
-            # this dimension), then at least consider 0
-            framesPos[dim] = [0]
-
-    # constructing the shape of the framed signal
-    framedShape = np.append(frameShape, [len(x) for x in framesPos])
-    return (framesPos, framedShape, frameShape, hop,
-            fdim, nDim, frameShapeAligned)
-
-
-def split(sig, frames_shape, hop, weight_frames=False, verbose=False):
-    """splits a ndarray into overlapping frames
-    sig : ndarray
-    frameShape : tuple giving the size of each frame. If its shape is
-                 smaller than that of sig, assume the frame is of size 1
-                 for all missing dimensions
-    hop : tuple giving the hopsize in each dimension. If its shape is
-          smaller than that of sig, assume the hopsize is 1 for all
-          missing dimensions
-    weightFrames : return frames weighted by a ND hamming window
-    verbose : whether to output progress during computation"""
-
-    # signal shape
-    sigShape = np.array(sig.shape)
-
-    (framesPos, framedShape, frameShape,
-     hop, fdim, nDim, frameShapeAligned) = splitinfo(
-                        sigShape, frames_shape, hop)
-
-    if weight_frames:
-        # constructing the weighting window. Choosing hamming for convenience
-        # (never 0)
-        win = 1
-        for dim in range(len(frameShape) - 1, -1, -1):
-            win = np.outer(np.hamming(frameShapeAligned[dim]), win)
-        win = np.squeeze(win)
-
-    # alocating memory for framed signal
-    framed = np.zeros(framedShape, dtype=sig.dtype)
-
-    # total number of frames (for displaying)
-    nFrames = np.prod([len(x) for x in framesPos])
-
-    # for each frame
-    for iframe, index in enumerate(
-                itertools.product(*[range(len(x)) for x in framesPos])):
-        # display from time to time if asked for
-        if verbose and (not iframe % 100):
-            print('Splitting : frame ' + str(iframe) + '/' + str(nFrames))
-
-        # build the slice to use for extracting the signal of this frame.
-        frameRange = [Ellipsis]
-        for dim in range(nDim):
-            frameRange += [slice(framesPos[dim][index[dim]],
-                                 min(sigShape[dim],
-                                     framesPos[dim][index[dim]]
-                                     + frameShapeAligned[dim]),
-                                 1)]
-
-        # extract the signal
-        sigFrame = sig[tuple(frameRange)]
-        sigFrame.shape = sigFrame.shape[:fdim]
-
-        # the signal may be shorter than the normal size of a frame (at the
-        # end of the signal). We build a slice that corresponds to the actual
-        # size we got here
-        sigFrameRange = [slice(0, x, 1) for x in sigFrame.shape[:fdim]]
-
-        # puts the signal in the output variable
-        framed[tuple(sigFrameRange + list(index))] = sigFrame
-
-        if weight_frames:
-            # multiply by the weighting window
-            framed[(Ellipsis,) + tuple(index)] *= win
-
-    frameShape = [int(x) for x in frameShape]
-    return framed
-
-
-def overlapadd(S, fdim, hop, shape=None, weighted_frames=True, verbose=False):
-    """n-dimensional overlap-add
-    S    : ndarray containing the stft to be inverted
-    fdim : the number of dimensions in S corresponding to
-           frame indices.
-    hop  : tuple containing hopsizes along dimensions.
-           Missing hopsizes are assumed to be 1
-    shape: Indicating the original shape of the
-           signal for truncating. If None: no truncating is done
-    weightedFrames: True if we need to compensate for the analysis weighting
-                    (weightFrames of the split function)
-    verbose: whether or not to display progress
-            """
-
-    # number of dimensions
-    nDim = len(S.shape)
-
-    frameShape = S.shape[:fdim]
-    trueFrameShape = np.append(
-        frameShape,
-        np.ones(
-            (nDim - len(frameShape)))).astype(int)
-
-    # same thing for hop
-    if np.isscalar(hop):
-        hop = (hop,)
-    hop = np.array(hop)
-    hop = np.append(hop, np.ones((nDim - len(hop)))).astype(int)
-
-    sigShape = [
-        (nframedim - 1) * hopdim + frameshapedim for (
-            nframedim,
-            hopdim,
-            frameshapedim) in zip(S.shape[fdim:], hop, trueFrameShape)]
-
-    # building the positions of the frames. For each dimension, gridding from
-    # 0 to sigShape[dim] every hop[dim]
-    framesPos = [np.arange(size) * step for (size, step)
-                 in zip(S.shape[fdim:], hop)]
-
-    # constructing the weighting window. Choosing hamming for convenience
-    # (never 0)
-    win = np.array(1)
-    for dim in range(fdim):
-        if trueFrameShape[dim] == 1:
-            win = win[..., None]
-        else:
-            key = ((None,) * len(win.shape) + (Ellipsis,))
-            win = (win[..., None]
-                   * np.hamming(trueFrameShape[dim]).__getitem__(key))
-
-    # if we need to compensate for analysis weighting, simply square window
-    if weighted_frames:
-        win2 = win ** 2
-    else:
-        win2 = win
-
-    sig = np.zeros(sigShape, dtype=S.dtype)
-
-    # will also store the sum of all weighting windows applied during
-    # overlap and add. Traditionally, window function and overlap are chosen
-    # so that these weights end up being 1 everywhere. However, we here are
-    # not restricted here to any particular hopsize. Hence, the price to pay
-    # is this further memory burden
-    weights = np.zeros(sigShape)
-
-    # total number of frames (for displaying)
-    nFrames = np.prod(S.shape[fdim:])
-
-    # could use memmap or stuff
-    S *= win[tuple([Ellipsis] + [None] * (len(S.shape) - len(win.shape)))]
-
-    # for each frame
-    for iframe, index in enumerate(
-            itertools.product(*[range(len(x)) for x in framesPos])):
-        # display from time to time if asked for
-        if verbose and (not iframe % 100):
-            print('overlap-add : frame ' + str(iframe) + '/' + str(nFrames))
-
-        # build the slice to use for overlap-adding the signal of this frame.
-        frameRange = [Ellipsis]
-        for dim in range(nDim-fdim):
-            frameRange += [slice(framesPos[dim][index[dim]],
-                                 min(sigShape[dim],
-                                     framesPos[dim][index[dim]]
-                                     + trueFrameShape[dim]),
-                                 1)]
-
-        # put back the reconstructed weighted frame into place
-        frameSig = S[tuple([Ellipsis] + list(index))]
-        sig[tuple(frameRange)] += frameSig[
-                tuple([Ellipsis] +
-                      [None] *
-                      (len(sig[tuple(frameRange)].shape) -
-                      len(frameSig.shape)))]
-
-        # also store the corresponding window contribution
-        weights[tuple(frameRange)] += win2[
-                tuple([Ellipsis] +
-                      [None] *
-                      (len(weights[tuple(frameRange)].shape) -
-                       len(win2.shape)))]
-
-    # account for different weighting at different places
-    sig /= weights
-
-    # truncate the signal if asked for
-    if shape is not None:
-        sig_res = np.zeros(shape, S.dtype)
-        truncateRange = [slice(0, min(x, sig.shape[i]), 1)
-                         for (i, x) in enumerate(shape)]
-        sig_res[tuple(truncateRange)] = sig[tuple(truncateRange)]
-        sig = sig_res
-
-    # finished
-    return sig

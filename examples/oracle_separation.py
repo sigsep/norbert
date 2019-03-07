@@ -8,27 +8,14 @@ import museval
 def oracle(track, separation_fn):
     # set (trackwise) norbert objects
     tf = norbert.TF()
-    ls = norbert.LogScaler()
-    qt = norbert.Quantizer()
-    im = norbert.Coder(format='jpg', quality=85)
 
     # compute the mixture complex tf transform
     x = tf.transform(track.audio)
 
-    # prepare the spectrograms of the sources
-    ls.scale(np.sum(np.abs(x)**2, axis=-1))
-    # bounds = None
     v = []
     for name, value in track.sources.items():
         v_j = np.sum(np.abs(tf.transform(value.audio))**2,
                      axis=-1, keepdims=True)
-
-        v_j = ls.scale(v_j)
-        v_j = qt.quantize(v_j)
-        v_j, file_size = im.encodedecode(v_j)
-
-        v_j = qt.dequantize(v_j)
-        v_j = ls.unscale(v_j)
 
         v += [np.squeeze(v_j)]
 
