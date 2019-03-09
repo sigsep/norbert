@@ -1,6 +1,6 @@
 import numpy as np
 import itertools
-from . contrib import residual, temporal_smooth, reduce_interferences
+from .contrib import residual, temporal_smooth, reduce_interferences
 from .contrib import compress_filter, smooth
 
 
