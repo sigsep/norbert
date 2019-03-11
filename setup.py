@@ -39,6 +39,11 @@ setup(
     extras_require={  # Optional
         'dev': ['check-manifest'],
         'tests': ['pytest', 'pytest-pep8'],
+        'docs': [
+            'sphinx',
+            'sphinx_rtd_theme',
+            'recommonmark'
+        ],
     },
 
     project_urls={  # Optional
