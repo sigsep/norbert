@@ -3,29 +3,49 @@ import musdb
 import numpy as np
 import functools
 import museval
+import scipy
+
+
+def stft(x, n_fft=2048, n_hopsize=1024):
+    _, _, X = scipy.signal.stft(
+        x,
+        nperseg=n_fft,
+        noverlap=n_fft - n_hopsize,
+        padded=True,
+        axis=0
+    )
+    X = X.transpose((0, 2, 1))
+    return X * n_hopsize
+
+
+def istft(X, rate=44100, n_fft=2048, n_hopsize=1024):
+    _, audio = scipy.signal.istft(
+        X / n_hopsize,
+        rate,
+        nperseg=n_fft,
+        noverlap=n_fft - n_hopsize,
+        time_axis=1,
+        freq_axis=0
+    )
+    return audio
 
 
 def oracle(track, separation_fn):
-    # set (trackwise) norbert objects
-    tf = norbert.TF()
-
     # compute the mixture complex tf transform
-    x = tf.transform(track.audio)
-
+    x = stft(track.audio)
     v = []
     for name, value in track.sources.items():
-        v_j = np.sum(np.abs(tf.transform(value.audio))**2,
+        v_j = np.sum(np.abs(stft(value.audio))**2,
                      axis=-1, keepdims=True)
 
         v += [np.squeeze(v_j)]
 
     v = np.moveaxis(np.array(v), 0, 2)
-
     y = separation_fn(v, x)
 
     estimates = {}
     for j, (name, value) in enumerate(track.sources.items()):
-        audio_hat = tf.inverse_transform(y[..., j])
+        audio_hat = istft(y[..., j])
         estimates[name] = audio_hat
 
     # Evaluate using museval
@@ -39,7 +59,7 @@ def oracle(track, separation_fn):
 
 
 if __name__ == '__main__':
-    mus = musdb.DB()
+    mus = musdb.DB(download=True)
     mus.run(
         functools.partial(
             oracle, separation_fn=norbert.softmask
