@@ -32,9 +32,6 @@ def residual(v, x, alpha=1):
     if len(v.shape) == 3:
         v = v[..., None, :]
 
-    # dimensions
-    (nb_frames, nb_bins, _, nb_sources) = v.shape
-
     # spectrogram for the mixture
     vx = np.maximum(eps, np.abs(x)**alpha)
 

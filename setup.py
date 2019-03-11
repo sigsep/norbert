@@ -38,7 +38,7 @@ setup(
 
     extras_require={  # Optional
         'dev': ['check-manifest'],
-        'tests': ['pytest', 'coverage', 'pytest-cov', 'pytest-pep8'],
+        'tests': ['pytest', 'pytest-pep8'],
     },
 
     project_urls={  # Optional
