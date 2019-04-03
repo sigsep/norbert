@@ -257,7 +257,7 @@ def expectation_maximization(y, x,
                 smoothing, vx if smoothing else None)
 
         Cxx = _get_mix_model(v, R)
-        inv_Cxx = invert(Cxx, eps)
+        inv_Cxx = np.linalg.pinv(Cxx)#invert(Cxx, eps)
 
         # separate the sources
         for j in range(nb_sources):
