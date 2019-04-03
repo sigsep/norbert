@@ -4,6 +4,45 @@ from .contrib import residual, reduce_interferences
 from .contrib import compress_filter, smooth
 
 
+def invert(M, eps):
+    """
+    Inverting matrices
+
+    Parameters
+    ----------
+    M : ndarray, shape (..., nb_channels, nb_channels)
+        matrices to invert: must be square along the last two dimensions
+
+    Returns
+    -------
+    ndarray, shape=(..., nb_channels, nb_channels)
+        invert of M
+    """
+    nb_channels = M.shape[-1]
+    if nb_channels == 1:
+        # scalar case
+        invM = 1.0/(M+eps)
+    elif nb_channels == 2:
+        M = M[...]
+        # M[..., 0, 0] += eps
+        # M[..., 1, 1] += eps
+        # two channels case: analytical expression
+        invDet = 1.0 / (
+            eps +
+            M[..., 0, 0]*M[..., 1, 1] -
+            M[..., 0, 1]*M[..., 1, 0]
+        )
+        invM = np.empty_like(M)
+        invM[..., 0, 0] = invDet*M[..., 1, 1]
+        invM[..., 1, 0] = -invDet*M[..., 1, 0]
+        invM[..., 0, 1] = -invDet*M[..., 0, 1]
+        invM[..., 1, 1] = invDet*M[..., 0, 0]
+    else:
+        # general case : no use of analytical expression (slow!)
+        invM = np.linalg.pinv(M, eps)
+    return invM
+
+
 def _wiener_gain(v_j, R_j, inv_Cxx):
     """
     compute the wiener gain for separating one source
@@ -217,7 +256,7 @@ def expectation_maximization(y, x,
                 smoothing, vx if smoothing else None)
 
         Cxx = _get_mix_model(v, R)
-        inv_Cxx = np.linalg.pinv(Cxx)
+        inv_Cxx = invert(Cxx, eps)
 
         # separate the sources
         for j in range(nb_sources):
