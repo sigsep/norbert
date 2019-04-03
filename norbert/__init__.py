@@ -27,11 +27,21 @@ def invert(M, eps):
         # M[..., 0, 0] += eps
         # M[..., 1, 1] += eps
         # two channels case: analytical expression
-        invDet = 1.0 / (
-            eps +
+        det = (
             M[..., 0, 0]*M[..., 1, 1] -
             M[..., 0, 1]*M[..., 1, 0]
         )
+        det[np.nonzero(det==0)]=eps
+        invDet = 1.0/det
+        II = np.nonzero(det==0)
+        if len(II[0]):
+            import ipdb; ipdb.set_trace()
+        #
+        #invDet = 1.0 / (
+        #    eps +
+        #    M[..., 0, 0]*M[..., 1, 1] -
+        #    M[..., 0, 1]*M[..., 1, 0]
+        #)
         invM = np.empty_like(M)
         invM[..., 0, 0] = invDet*M[..., 1, 1]
         invM[..., 1, 0] = -invDet*M[..., 1, 0]
@@ -256,11 +266,14 @@ def expectation_maximization(y, x,
                 smoothing, vx if smoothing else None)
 
         Cxx = _get_mix_model(v, R)
+        print('invert')
         inv_Cxx = invert(Cxx, eps)
-
+        print('done')
         # separate the sources
         for j in range(nb_sources):
+            print('wiener gain',j)
             W_j = _wiener_gain(v[..., j], R[..., j], inv_Cxx)
+            print('apply it',j)
             y[..., j] = _apply_filter(x, W_j)
 
     return y, v, R
