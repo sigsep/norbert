@@ -23,25 +23,18 @@ def invert(M, eps):
         # scalar case
         invM = 1.0/(M+eps)
     elif nb_channels == 2:
-        M = M[...]
-        # M[..., 0, 0] += eps
-        # M[..., 1, 1] += eps
         # two channels case: analytical expression
         det = (
             M[..., 0, 0]*M[..., 1, 1] -
-            M[..., 0, 1]*M[..., 1, 0]
-        )
-        det[np.nonzero(det==0)]=eps
+            M[..., 0, 1]*M[..., 1, 0])
+
+        # explicitely forbids singular matrices
+        singular = np.nonzero(det == 0)
+        M[singular, 0, 0] += np.sqrt(eps)
+        M[singular, 1, 1] += np.sqrt(eps)
+        det[singular] = eps
+
         invDet = 1.0/det
-        II = np.nonzero(det==0)
-        if len(II[0]):
-            import ipdb; ipdb.set_trace()
-        #
-        #invDet = 1.0 / (
-        #    eps +
-        #    M[..., 0, 0]*M[..., 1, 1] -
-        #    M[..., 0, 1]*M[..., 1, 0]
-        #)
         invM = np.empty_like(M)
         invM[..., 0, 0] = invDet*M[..., 1, 1]
         invM[..., 1, 0] = -invDet*M[..., 1, 0]
@@ -247,8 +240,7 @@ def expectation_maximization(y, x,
 
         Cxx = _get_mix_model(v, R)
         print('invert')
-        inv_Cxx = np.linalg.inv(Cxx + eps*identity)
-        #inv_Cxx = invert(Cxx, eps)
+        inv_Cxx = invert(Cxx, eps)
         print('done')
         # separate the sources
         for j in range(nb_sources):
