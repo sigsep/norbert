@@ -27,14 +27,8 @@ def invert(M, eps):
         det = (
             M[..., 0, 0]*M[..., 1, 1] -
             M[..., 0, 1]*M[..., 1, 0])
-
-        # explicitely forbids singular matrices
-        singular = np.nonzero(det == 0)
-        M[singular, 0, 0] += np.sqrt(eps)
-        M[singular, 1, 1] += np.sqrt(eps)
-        det[singular] = eps
-
-        invDet = 1.0/det
+        
+        invDet = 1.0/(det)
         invM = np.empty_like(M)
         invM[..., 0, 0] = invDet*M[..., 1, 1]
         invM[..., 1, 0] = -invDet*M[..., 1, 0]
@@ -215,7 +209,7 @@ def expectation_maximization(y, x,
         estimated spatial covariance matrices
     """
     # to avoid dividing by zero
-    eps = np.finfo(np.float32).eps
+    eps = np.finfo(x.dtype).eps
 
     # dimensions
     (nb_frames, nb_bins, nb_channels) = x.shape
@@ -226,7 +220,8 @@ def expectation_maximization(y, x,
     v = np.zeros((nb_frames, nb_bins, nb_sources))
 
     print('Number of iterations: ', iterations)
-    identity = _identity((nb_frames, nb_bins), nb_channels)
+    regularization = np.sqrt(eps) * (
+            _identity((nb_frames, nb_bins), nb_channels))
     for it in range(iterations):
         # constructing the mixture covariance matrix. Doing it with a loop
         # to avoid storing anytime in RAM the whole 6D tensor
@@ -239,14 +234,11 @@ def expectation_maximization(y, x,
                 eps)
 
         Cxx = _get_mix_model(v, R)
-        print('invert')
+        Cxx += regularization
         inv_Cxx = invert(Cxx, eps)
-        print('done')
         # separate the sources
         for j in range(nb_sources):
-            print('wiener gain', j)
             W_j = _wiener_gain(v[..., j], R[..., j], inv_Cxx)
-            print('apply it', j)
             y[..., j] = _apply_filter(x, W_j)
 
     return y, v, R
@@ -275,7 +267,7 @@ def softmask(v, x, logit=None):
         estimated sources
     """
     # to avoid dividing by zero
-    eps = np.finfo(np.float32).eps
+    eps = np.finfo(v.dtype).eps
     if len(v.shape) == 3:
         v = v[..., None, :]
     total_energy = np.sum(v, axis=-1, keepdims=True)
@@ -308,8 +300,10 @@ def wiener(v, x, iterations=2, logit=None):
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
         estimated sources
     """
+    max_abs = np.abs(x).max()/10.
+    x /= max_abs
     y = softmask(v, x, logit)
 
     if iterations:
         y = expectation_maximization(y, x, iterations)[0]
-    return y
+    return y*max_abs
