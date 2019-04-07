@@ -43,13 +43,13 @@ def residual(v, x, alpha=1):
     gain = (
         np.sum(vx*v_total, axis=0, keepdims=True) /
         (eps+np.sum(v_total**2, axis=0, keepdims=True)))
-    v *= gain[..., None]
+    v_g = v * gain[..., None]
     v_total *= gain
 
     # residual is difference between the observation and the model
     vr = np.maximum(0, vx - v_total)
 
-    return np.concatenate((v, vr[..., None]), axis=3)
+    return np.concatenate((v_g, vr[..., None]), axis=3)
 
 
 def smooth(v, width=1):
