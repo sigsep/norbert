@@ -62,7 +62,7 @@ def _wiener_gain(v_j, R_j, inv_Cxx):
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)
         wiener filtering matrices
     """
-    (nb_bins, nb_channels) = R_j.shape[:2]
+    (_, nb_channels) = R_j.shape[:2]
 
     # computes multichannel Wiener gain as v_j R_j inv_Cxx
     G = np.zeros_like(inv_Cxx)
@@ -183,11 +183,10 @@ def _get_local_gaussian_model(y_j, eps=1.):
     return v_j, R_j
 
 
-def expectation_maximization(y, x,
-                             iterations=2):
-    """
-    expectation maximization, with initial values provided for the sources
-    power spectral densities.
+def expectation_maximization(y, x, iterations=2, verbose=0):
+    """expectation maximization, 
+    
+    with initial values provided for the sources power spectral densities.
 
     Parameters
     ----------
@@ -219,13 +218,15 @@ def expectation_maximization(y, x,
     R = np.zeros((nb_bins, nb_channels, nb_channels, nb_sources), x.dtype)
     v = np.zeros((nb_frames, nb_bins, nb_sources))
 
-    print('Number of iterations: ', iterations)
+    if verbose:
+        print('Number of iterations: ', iterations)
     regularization = np.sqrt(eps) * (
             _identity((nb_frames, nb_bins), nb_channels))
     for it in range(iterations):
         # constructing the mixture covariance matrix. Doing it with a loop
         # to avoid storing anytime in RAM the whole 6D tensor
-        print('EM, iteration %d' % (it+1))
+        if verbose:
+            print('EM, iteration %d' % (it+1))
 
         for j in range(nb_sources):
             # update the spectrogram model for source j
