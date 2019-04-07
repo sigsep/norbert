@@ -27,7 +27,7 @@ def invert(M, eps):
         det = (
             M[..., 0, 0]*M[..., 1, 1] -
             M[..., 0, 1]*M[..., 1, 0])
-        
+
         invDet = 1.0/(det)
         invM = np.empty_like(M)
         invM[..., 0, 0] = invDet*M[..., 1, 1]
@@ -184,8 +184,7 @@ def _get_local_gaussian_model(y_j, eps=1.):
 
 
 def expectation_maximization(y, x, iterations=2, verbose=0):
-    """expectation maximization, 
-    
+    """expectation maximization,
     with initial values provided for the sources power spectral densities.
 
     Parameters
@@ -302,9 +301,9 @@ def wiener(v, x, iterations=2, logit=None):
         estimated sources
     """
     max_abs = np.abs(x).max()/10.
-    x /= max_abs
-    y = softmask(v, x, logit)
+    x_scaled = x / max_abs
+    y = softmask(v, x_scaled, logit)
 
     if iterations:
-        y = expectation_maximization(y, x, iterations)[0]
+        y = expectation_maximization(y, x_scaled, iterations)[0]
     return y*max_abs
