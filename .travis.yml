@@ -1,0 +1,35 @@
+cache: pip
+
+language: python
+
+notifications:
+  email: false
+
+matrix:
+  include:
+    - python: 3.5
+    - python: 3.6
+    - python: 3.7
+      dist: xenial
+      sudo: true
+
+before_install:
+  - bash .travis_dependencies.sh
+  - export PATH="$HOME/env/miniconda$TRAVIS_PYTHON_VERSION/bin:$PATH";
+  - hash -r
+  - source activate test-environment
+  - conda list
+
+install:
+  # install your own package into the environment
+  - pip install -e .[tests]
+
+
+script:
+  - py.test tests
+
+after_success:
+  - pip uninstall -y norbert
+
+after_failure:
+  - pip uninstall -y norbert
