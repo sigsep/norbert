@@ -26,7 +26,7 @@ install:
 
 script:
   - py.test tests
-  - cd docs; make html; touch docs/html/.nojekyll
+  - cd docs; make html; touch html/.nojekyll
 
 after_success:
   - pip uninstall -y norbert
