@@ -22,7 +22,7 @@ before_install:
 
 install:
   # install your own package into the environment
-  - pip install -e .[tests, docs]
+  - pip install -e ".[tests,docs]"
 
 script:
   - py.test tests
