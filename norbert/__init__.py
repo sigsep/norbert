@@ -176,6 +176,8 @@ def _get_local_gaussian_model(y_j, eps=1.):
     C_j = _covariance(y_j)
 
     # updates the spatial covariance matrix
+    # this is where there is a potential overflow problem for very long
+    # files, but we ignore this potential issue.
     R_j = (
         np.sum(C_j, axis=0) /
         (eps+np.sum(v_j[..., None, None], axis=0))
@@ -252,7 +254,7 @@ def softmask(v, x, logit=None):
 
     Parameters
     ----------
-    v : ndarray, shape (nb_frames, nb_bins, [nb_channels], nb_sources)
+    v : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_sources)
         spectrograms of the sources
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         mixture signal
@@ -268,8 +270,6 @@ def softmask(v, x, logit=None):
     """
     # to avoid dividing by zero
     eps = np.finfo(v.dtype).eps
-    if len(v.shape) == 3:
-        v = v[..., None, :]
     total_energy = np.sum(v, axis=-1, keepdims=True)
     filter = v/(eps + total_energy)
     if logit is not None:
@@ -285,8 +285,8 @@ def wiener(v, x, iterations=2, logit=None):
 
     Parameters
     ----------
-    v : ndarrays, shape (nb_frames, nb_bins, [nb_channels], nb_sources)
-        spectrograms of the sources, optionally 4D.
+    v : ndarrays, shape (nb_frames, nb_bins, nb_channels, nb_sources)
+        spectrograms of the sources
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         mixture signal
     iterations: int
