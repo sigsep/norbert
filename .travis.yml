@@ -22,14 +22,23 @@ before_install:
 
 install:
   # install your own package into the environment
-  - pip install -e .[tests]
-
+  - pip install -e .[tests, docs]
 
 script:
   - py.test tests
+  - cd docs; make html; touch docs/html/.nojekyll
 
 after_success:
   - pip uninstall -y norbert
 
 after_failure:
   - pip uninstall -y norbert
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN  # Set in travis-ci.org dashboard, marked secure
+  keep-history: true
+  on:
+    branch: master
+  local_dir: docs/html/
