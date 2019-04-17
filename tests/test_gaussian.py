@@ -28,11 +28,6 @@ def nb_iterations(request):
     return request.param
 
 
-@pytest.fixture(params=[True, False])
-def no_channels(request):
-    return request.param
-
-
 @pytest.fixture
 def X(request, nb_frames, nb_bins, nb_channels):
     return np.random.random(
@@ -43,11 +38,8 @@ def X(request, nb_frames, nb_bins, nb_channels):
 
 
 @pytest.fixture
-def V(request, nb_frames, nb_bins, nb_channels, nb_sources, no_channels):
-    if no_channels:
-        return np.random.random((nb_frames, nb_bins, nb_sources))
-    else:
-        return np.random.random((nb_frames, nb_bins, nb_channels, nb_sources))
+def V(request, nb_frames, nb_bins, nb_channels, nb_sources):
+    return np.random.random((nb_frames, nb_bins, nb_channels, nb_sources))
 
 
 def test_shapes(V, X):
@@ -105,10 +97,4 @@ def test_softmask(V, X):
     X = X.shape[-1] * np.ones(X.shape)
 
     Y = norbert.softmask(V, X)
-    assert np.allclose(Y.sum(-1), X)
-
-
-def test_wiener(V, X, nb_iterations):
-    X = X.shape[-1] * np.ones(X.shape)
-    Y = norbert.wiener(V, X, iterations=nb_iterations)
     assert np.allclose(Y.sum(-1), X)
