@@ -15,8 +15,8 @@ def residual(v, x, alpha=1):
 
     Parameters
     ----------
-    v : ndarray, shape (nb_frames, nb_bins, [nb_channels], nb_sources)
-        Power spectral densities for the sources, optionally 4-D
+    v : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_sources)
+        Power spectral densities for the sources
     x : ndarray, shape (nb_frames, nb_bins, nb_channels)
         complex mixture
 
@@ -27,10 +27,6 @@ def residual(v, x, alpha=1):
     """
     # to avoid dividing by zero
     eps = np.finfo(np.float).eps
-
-    # making the sources PSD 4-D
-    if len(v.shape) == 3:
-        v = v[..., None, :]
 
     # spectrogram for the mixture
     vx = np.maximum(eps, np.abs(x)**alpha)
@@ -44,7 +40,9 @@ def residual(v, x, alpha=1):
         np.sum(vx*v_total, axis=0, keepdims=True) /
         (eps+np.sum(v_total**2, axis=0, keepdims=True)))
     v_g = v * gain[..., None]
-    v_total *= gain
+
+    # resum the sources to build the new current model
+    v_total = np.sum(v, axis=-1)
 
     # residual is difference between the observation and the model
     vr = np.maximum(0, vx - v_total)
