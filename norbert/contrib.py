@@ -50,11 +50,29 @@ def residual(v, x, alpha=1):
     return np.concatenate((v_g, vr[..., None]), axis=3)
 
 
-def smooth(v, width=1):
+def smooth(v, width=1, temporal=False):
     """
     smooth a nonnegative ndarray. Simply apply a small Gaussian blur
+
+    Parameters
+    ----------
+    v : ndarray, shape (nb_frames, ...)
+        spectrograms of the sources
+    sigma : int
+        lengthscale of the gaussian blur
+    temporal boolean
+        if True, will smooth only along time through 1d blur
+
+    Returns
+    -------
+    ndarray, shape=(nb_frames, nb_bins, [nb_channels], nb_sources)
+        filtered spectra
+
     """
-    return gaussian_filter(v, sigma=width, truncate=width)
+    if temporal:
+        return gaussian_filter1d(v, sigma=width, axis=0)
+    else:
+        return gaussian_filter(v, sigma=width, truncate=width)
 
 
 def reduce_interferences(v, thresh=0.6, slope=15):

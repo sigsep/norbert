@@ -185,7 +185,7 @@ def _get_local_gaussian_model(y_j, eps=1.):
     return v_j, R_j
 
 
-def expectation_maximization(y, x, iterations=2, verbose=0):
+def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0):
     """expectation maximization,
     with initial values provided for the sources power spectral densities.
 
@@ -199,6 +199,11 @@ def expectation_maximization(y, x, iterations=2, verbose=0):
         number of iterations for the EM algorithm. 1 means processing the
         channels independently with the same filter. More means computing
         spatial statistics.
+    final_smoothing: int
+        if > 0, width of the Gaussian temporal blurring to apply to the
+        spectrograms before final separation. Introduces interference, but
+        reduces distortion.
+
     Returns
     -------
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
@@ -234,6 +239,11 @@ def expectation_maximization(y, x, iterations=2, verbose=0):
             v[..., j], R[..., j] = _get_local_gaussian_model(
                 y[..., j],
                 eps)
+
+        if it == iterations - 1 and final_smoothing > 0:
+            if verbose:
+                print('  smoothing spectrograms...')
+            v = smooth(v, final_smoothing, temporal=True)
 
         Cxx = _get_mix_model(v, R)
         Cxx += regularization
@@ -277,11 +287,14 @@ def softmask(v, x, logit=None):
     return filter * x[..., None]
 
 
-def wiener(v, x, iterations=2, logit=None):
+def wiener(v, x, iterations=2, softmask=1, final_smoothing=0):
     """
     apply a multichannel wiener filter to x.
-    the spatial statistics are estimated automatically with an EM algorithm,
-    using the values provided for the sources PSD as initializion.
+    a first estimate is obtained through soft masking or direct reconstruction,
+    and then an iterative EM algorithm is applied to refine the results.
+
+    this notably leads to take the spatial (stereo) statistics of the signals
+    into account.
 
     Parameters
     ----------
@@ -291,19 +304,39 @@ def wiener(v, x, iterations=2, logit=None):
         mixture signal
     iterations: int
         number of iterations for the EM algorithm
-    logit: None or float between 0 and 1
-        enable a compression of the initial softmask filter, see the doc for
-        softmask.
+    softmask: number
+        * if zero, then the mixture phase will directly be used with the
+        spectrogram for first estimation. Be careful that you need
+        __magnitude spectrogram estimates__ in that case (not power
+        spectrograms)
+        * if nonzero, will use a softmasking strategy instead.
+        hint: use nonzero only if your spectrogram model is pretty good.
+    final_smoothing: int
+        if > 0, width of the Gaussian temporal blurring to apply to the
+        spectrograms before final separation. Introduces interference, but
+        reduces distortion.
 
     Returns
     -------
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
         estimated sources
     """
-    max_abs = np.abs(x).max()/10.
-    x_scaled = x / max_abs
-    y = softmask(v, x_scaled, logit)
+    if softmask:
+        # if there's no iteration, don't forget smoothing
+        if not iterations and final_smoothing > 0:
+            v = smooth(v, final_smoothing)
+        y = softmask(v, x)
+    else:
+        # no smoothing in any case in this setup
+        y = v * np.exp(1j*np.angle(x[..., None]))
 
-    if iterations:
-        y = expectation_maximization(y, x_scaled, iterations)[0]
+    if not iterations:
+        return y
+
+    # we need to refine the estimates. Scales down the estimates for
+    # numerical stability
+    max_abs = max(1, np.abs(x).max()/10.)
+    x_scaled = x / max_abs
+    y = expectation_maximization(y/max_abs, x_scaled, iterations,
+                                 final_smoothing)[0]
     return y*max_abs
