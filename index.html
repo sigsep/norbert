@@ -150,7 +150,7 @@
             
   <div class="section" id="welcome-to-norbert-documentation">
 <h1>Welcome to Norbert documentation!<a class="headerlink" href="#welcome-to-norbert-documentation" title="Permalink to this headline">¶</a></h1>
-<table class="longtable docutils align-center">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -169,7 +169,7 @@
 <span id="api-documentation"></span><h1>API documentation<a class="headerlink" href="#module-norbert" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="norbert.expectation_maximization">
-<code class="descclassname">norbert.</code><code class="descname">expectation_maximization</code><span class="sig-paren">(</span><em>y</em>, <em>x</em>, <em>iterations=2</em>, <em>verbose=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#expectation_maximization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.expectation_maximization" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">expectation_maximization</code><span class="sig-paren">(</span><em class="sig-param">y</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=2</em>, <em class="sig-param">verbose=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#expectation_maximization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.expectation_maximization" title="Permalink to this definition">¶</a></dt>
 <dd><p>expectation maximization,
 with initial values provided for the sources power spectral densities.</p>
 <dl class="field-list simple">
@@ -195,7 +195,7 @@ spatial statistics.</p></li>
 
 <dl class="function">
 <dt id="norbert.invert">
-<code class="descclassname">norbert.</code><code class="descname">invert</code><span class="sig-paren">(</span><em>M</em>, <em>eps</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#invert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.invert" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">invert</code><span class="sig-paren">(</span><em class="sig-param">M</em>, <em class="sig-param">eps</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#invert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.invert" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inverting matrices</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -212,7 +212,7 @@ spatial statistics.</p></li>
 
 <dl class="function">
 <dt id="norbert.softmask">
-<code class="descclassname">norbert.</code><code class="descname">softmask</code><span class="sig-paren">(</span><em>v</em>, <em>x</em>, <em>logit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#softmask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.softmask" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">softmask</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">logit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#softmask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.softmask" title="Permalink to this definition">¶</a></dt>
 <dd><p>apply simple ratio mask on all the channels of x, independently,
 using the values provided for the sources spectrograms for
 devising the masks</p>
@@ -237,7 +237,7 @@ under which it is brought closer to 0.</p></li>
 
 <dl class="function">
 <dt id="norbert.wiener">
-<code class="descclassname">norbert.</code><code class="descname">wiener</code><span class="sig-paren">(</span><em>v</em>, <em>x</em>, <em>iterations=2</em>, <em>logit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#wiener"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.wiener" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">wiener</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=2</em>, <em class="sig-param">logit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#wiener"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.wiener" title="Permalink to this definition">¶</a></dt>
 <dd><p>apply a multichannel wiener filter to x.
 the spatial statistics are estimated automatically with an EM algorithm,
 using the values provided for the sources PSD as initializion.</p>
@@ -262,7 +262,7 @@ softmask.</p></li>
 
 <span class="target" id="module-norbert.contrib"></span><dl class="function">
 <dt id="norbert.contrib.compress_filter">
-<code class="descclassname">norbert.contrib.</code><code class="descname">compress_filter</code><span class="sig-paren">(</span><em>W</em>, <em>eps</em>, <em>thresh=0.6</em>, <em>slope=15</em>, <em>multichannel=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#compress_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.compress_filter" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">compress_filter</code><span class="sig-paren">(</span><em class="sig-param">W</em>, <em class="sig-param">eps</em>, <em class="sig-param">thresh=0.6</em>, <em class="sig-param">slope=15</em>, <em class="sig-param">multichannel=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#compress_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.compress_filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Applies a logit compression to a filter.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -290,7 +290,7 @@ if it’s 2D, it’s like multichannel=False. If it’s
 
 <dl class="function">
 <dt id="norbert.contrib.reduce_interferences">
-<code class="descclassname">norbert.contrib.</code><code class="descname">reduce_interferences</code><span class="sig-paren">(</span><em>v</em>, <em>thresh=0.6</em>, <em>slope=15</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#reduce_interferences"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.reduce_interferences" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">reduce_interferences</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">thresh=0.6</em>, <em class="sig-param">slope=15</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#reduce_interferences"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.reduce_interferences" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
 <div><p>reduce interferences between spectrograms with logit compression.
 See <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
@@ -318,7 +318,7 @@ to 1, the more distortion but the less interferences, hopefully</p>
 
 <dl class="function">
 <dt id="norbert.contrib.residual">
-<code class="descclassname">norbert.contrib.</code><code class="descname">residual</code><span class="sig-paren">(</span><em>v</em>, <em>x</em>, <em>alpha=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#residual"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.residual" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">residual</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">alpha=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#residual"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.residual" title="Permalink to this definition">¶</a></dt>
 <dd><p>A model for the residual to the sources models v.
 obtained with simple spectral subtraction after matching the model
 with the mixture as best as possible, frequency wise</p>
@@ -340,7 +340,7 @@ with the mixture as best as possible, frequency wise</p>
 
 <dl class="function">
 <dt id="norbert.contrib.smooth">
-<code class="descclassname">norbert.contrib.</code><code class="descname">smooth</code><span class="sig-paren">(</span><em>v</em>, <em>width=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#smooth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.smooth" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">smooth</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">width=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#smooth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.smooth" title="Permalink to this definition">¶</a></dt>
 <dd><p>smooth a nonnegative ndarray. Simply apply a small Gaussian blur</p>
 </dd></dl>
 
