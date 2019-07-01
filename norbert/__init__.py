@@ -216,7 +216,7 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0, e
     # to avoid dividing by zero
     #eps = np.finfo(x.dtype).eps
     if eps is None:
-        eps = np.finfo(np.float64).eps
+        eps = np.finfo(np.real(x).dtype).eps
 
     # dimensions
     (nb_frames, nb_bins, nb_channels) = x.shape
@@ -282,7 +282,7 @@ def softmask(v, x, logit=None, eps=None):
     """
     # to avoid dividing by zero
     if eps is None:
-        eps = np.finfo(np.float64).eps
+        eps = np.finfo(v.dtype).eps
     total_energy = np.sum(v, axis=-1, keepdims=True)
     filter = v/(eps + total_energy)
     if logit is not None:
