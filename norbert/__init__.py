@@ -185,7 +185,10 @@ def _get_local_gaussian_model(y_j, eps=1.):
     return v_j, R_j
 
 
-def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0, eps=None):
+def expectation_maximization(
+    y, x, 
+    iterations=2, final_smoothing=0, verbose=0, eps=None
+):
     """expectation maximization,
     with initial values provided for the sources power spectral densities.
 
@@ -214,7 +217,6 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0, e
         estimated spatial covariance matrices
     """
     # to avoid dividing by zero
-    #eps = np.finfo(x.dtype).eps
     if eps is None:
         eps = np.finfo(np.real(x).dtype).eps
 
