@@ -195,11 +195,29 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">v_g</span><span class="p">,</span> <span class="n">vr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="smooth"><a class="viewcode-back" href="../../index.html#norbert.contrib.smooth">[docs]</a><span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="smooth"><a class="viewcode-back" href="../../index.html#norbert.contrib.smooth">[docs]</a><span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">temporal</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    smooth a nonnegative ndarray. Simply apply a small Gaussian blur</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    v : ndarray, shape (nb_frames, ...)</span>
+<span class="sd">        spectrograms of the sources</span>
+<span class="sd">    sigma : int</span>
+<span class="sd">        lengthscale of the gaussian blur</span>
+<span class="sd">    temporal boolean</span>
+<span class="sd">        if True, will smooth only along time through 1d blur</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ndarray, shape=(nb_frames, nb_bins, [nb_channels], nb_sources)</span>
+<span class="sd">        filtered spectra</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">truncate</span><span class="o">=</span><span class="n">width</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="n">temporal</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gaussian_filter1d</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">truncate</span><span class="o">=</span><span class="n">width</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="reduce_interferences"><a class="viewcode-back" href="../../index.html#norbert.contrib.reduce_interferences">[docs]</a><span class="k">def</span> <span class="nf">reduce_interferences</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">slope</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>

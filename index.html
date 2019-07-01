@@ -156,10 +156,10 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#norbert.softmask" title="norbert.softmask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norbert.softmask</span></code></a>(v, x[, logit])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#norbert.softmask" title="norbert.softmask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norbert.softmask</span></code></a>(v, x[, logit, eps])</p></td>
 <td><p>apply simple ratio mask on all the channels of x, independently, using the values provided for the sources spectrograms for devising the masks</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#norbert.wiener" title="norbert.wiener"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norbert.wiener</span></code></a>(v, x[, iterations, logit])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#norbert.wiener" title="norbert.wiener"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norbert.wiener</span></code></a>(v, x[, iterations, …])</p></td>
 <td><p>apply a multichannel wiener filter to x.</p></td>
 </tr>
 </tbody>
@@ -169,7 +169,7 @@
 <span id="api-documentation"></span><h1>API documentation<a class="headerlink" href="#module-norbert" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="norbert.expectation_maximization">
-<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">expectation_maximization</code><span class="sig-paren">(</span><em class="sig-param">y</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=2</em>, <em class="sig-param">verbose=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#expectation_maximization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.expectation_maximization" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">expectation_maximization</code><span class="sig-paren">(</span><em class="sig-param">y</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=2</em>, <em class="sig-param">final_smoothing=0</em>, <em class="sig-param">verbose=0</em>, <em class="sig-param">eps=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#expectation_maximization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.expectation_maximization" title="Permalink to this definition">¶</a></dt>
 <dd><p>expectation maximization,
 with initial values provided for the sources power spectral densities.</p>
 <dl class="field-list simple">
@@ -180,6 +180,9 @@ with initial values provided for the sources power spectral densities.</p>
 <li><p><strong>iterations</strong> (<em>int</em>) – number of iterations for the EM algorithm. 1 means processing the
 channels independently with the same filter. More means computing
 spatial statistics.</p></li>
+<li><p><strong>final_smoothing</strong> (<em>int</em>) – if &gt; 0, width of the Gaussian temporal blurring to apply to the
+spectrograms before final separation. Introduces interference, but
+reduces distortion.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -212,7 +215,7 @@ spatial statistics.</p></li>
 
 <dl class="function">
 <dt id="norbert.softmask">
-<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">softmask</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">logit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#softmask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.softmask" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">softmask</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">logit=None</em>, <em class="sig-param">eps=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#softmask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.softmask" title="Permalink to this definition">¶</a></dt>
 <dd><p>apply simple ratio mask on all the channels of x, independently,
 using the values provided for the sources spectrograms for
 devising the masks</p>
@@ -237,18 +240,30 @@ under which it is brought closer to 0.</p></li>
 
 <dl class="function">
 <dt id="norbert.wiener">
-<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">wiener</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=2</em>, <em class="sig-param">logit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#wiener"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.wiener" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">wiener</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=2</em>, <em class="sig-param">use_softmask=1</em>, <em class="sig-param">final_smoothing=0</em>, <em class="sig-param">eps=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#wiener"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.wiener" title="Permalink to this definition">¶</a></dt>
 <dd><p>apply a multichannel wiener filter to x.
-the spatial statistics are estimated automatically with an EM algorithm,
-using the values provided for the sources PSD as initializion.</p>
+a first estimate is obtained through soft masking or direct reconstruction,
+and then an iterative EM algorithm is applied to refine the results.</p>
+<p>this notably leads to take the spatial (stereo) statistics of the signals
+into account.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>v</strong> (<em>ndarrays</em><em>, </em><em>shape</em><em> (</em><em>nb_frames</em><em>, </em><em>nb_bins</em><em>, </em><em>nb_channels</em><em>, </em><em>nb_sources</em><em>)</em>) – spectrograms of the sources</p></li>
 <li><p><strong>x</strong> (<em>ndarray</em><em>, </em><em>shape</em><em> (</em><em>nb_frames</em><em>, </em><em>nb_bins</em><em>, </em><em>nb_channels</em><em>)</em>) – mixture signal</p></li>
 <li><p><strong>iterations</strong> (<em>int</em>) – number of iterations for the EM algorithm</p></li>
-<li><p><strong>logit</strong> (<em>None</em><em> or </em><em>float between 0 and 1</em>) – enable a compression of the initial softmask filter, see the doc for
-softmask.</p></li>
+<li><p><strong>use_softmask</strong> (<em>number</em>) – <ul>
+<li><p>if zero, then the mixture phase will directly be used with the</p></li>
+</ul>
+<p>spectrogram for first estimation. Be careful that you need
+__magnitude spectrogram <a href="#id3"><span class="problematic" id="id4">estimates__</span></a> in that case (not power
+spectrograms)
+* if nonzero, will use a softmasking strategy instead.
+hint: use zero only if your spectrogram model is pretty good.</p>
+</p></li>
+<li><p><strong>final_smoothing</strong> (<em>int</em>) – if &gt; 0, width of the Gaussian temporal blurring to apply to the
+spectrograms before final separation. Introduces interference, but
+reduces distortion.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -340,8 +355,23 @@ with the mixture as best as possible, frequency wise</p>
 
 <dl class="function">
 <dt id="norbert.contrib.smooth">
-<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">smooth</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">width=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#smooth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.smooth" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">smooth</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">width=1</em>, <em class="sig-param">temporal=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#smooth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.smooth" title="Permalink to this definition">¶</a></dt>
 <dd><p>smooth a nonnegative ndarray. Simply apply a small Gaussian blur</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v</strong> (<em>ndarray</em><em>, </em><em>shape</em><em> (</em><em>nb_frames</em><em>, </em><em>..</em><em>)</em>) – spectrograms of the sources</p></li>
+<li><p><strong>sigma</strong> (<em>int</em>) – lengthscale of the gaussian blur</p></li>
+<li><p><strong>boolean</strong> (<em>temporal</em>) – if True, will smooth only along time through 1d blur</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>filtered spectra</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray, shape=(nb_frames, nb_bins, [nb_channels], nb_sources)</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>

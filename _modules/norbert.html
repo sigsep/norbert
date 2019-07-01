@@ -328,7 +328,10 @@
     <span class="k">return</span> <span class="n">v_j</span><span class="p">,</span> <span class="n">R_j</span>
 
 
-<div class="viewcode-block" id="expectation_maximization"><a class="viewcode-back" href="../index.html#norbert.expectation_maximization">[docs]</a><span class="k">def</span> <span class="nf">expectation_maximization</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="expectation_maximization"><a class="viewcode-back" href="../index.html#norbert.expectation_maximization">[docs]</a><span class="k">def</span> <span class="nf">expectation_maximization</span><span class="p">(</span>
+    <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span>
+    <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">final_smoothing</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;expectation maximization,</span>
 <span class="sd">    with initial values provided for the sources power spectral densities.</span>
 
@@ -342,6 +345,11 @@
 <span class="sd">        number of iterations for the EM algorithm. 1 means processing the</span>
 <span class="sd">        channels independently with the same filter. More means computing</span>
 <span class="sd">        spatial statistics.</span>
+<span class="sd">    final_smoothing: int</span>
+<span class="sd">        if &gt; 0, width of the Gaussian temporal blurring to apply to the</span>
+<span class="sd">        spectrograms before final separation. Introduces interference, but</span>
+<span class="sd">        reduces distortion.</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)</span>
@@ -352,7 +360,8 @@
 <span class="sd">        estimated spatial covariance matrices</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># to avoid dividing by zero</span>
-    <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+    <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
 
     <span class="c1"># dimensions</span>
     <span class="p">(</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
@@ -378,6 +387,11 @@
                 <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
                 <span class="n">eps</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="n">it</span> <span class="o">==</span> <span class="n">iterations</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">final_smoothing</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;  smoothing spectrograms...&#39;</span><span class="p">)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">final_smoothing</span><span class="p">,</span> <span class="n">temporal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
         <span class="n">Cxx</span> <span class="o">=</span> <span class="n">_get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">)</span>
         <span class="n">Cxx</span> <span class="o">+=</span> <span class="n">regularization</span>
         <span class="n">inv_Cxx</span> <span class="o">=</span> <span class="n">invert</span><span class="p">(</span><span class="n">Cxx</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
@@ -389,7 +403,7 @@
     <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">R</span></div>
 
 
-<div class="viewcode-block" id="softmask"><a class="viewcode-back" href="../index.html#norbert.softmask">[docs]</a><span class="k">def</span> <span class="nf">softmask</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="softmask"><a class="viewcode-back" href="../index.html#norbert.softmask">[docs]</a><span class="k">def</span> <span class="nf">softmask</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    apply simple ratio mask on all the channels of x, independently,</span>
 <span class="sd">    using the values provided for the sources spectrograms for</span>
@@ -412,7 +426,8 @@
 <span class="sd">        estimated sources</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># to avoid dividing by zero</span>
-    <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+    <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
     <span class="n">total_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="nb">filter</span> <span class="o">=</span> <span class="n">v</span><span class="o">/</span><span class="p">(</span><span class="n">eps</span> <span class="o">+</span> <span class="n">total_energy</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">logit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -420,11 +435,14 @@
     <span class="k">return</span> <span class="nb">filter</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="wiener"><a class="viewcode-back" href="../index.html#norbert.wiener">[docs]</a><span class="k">def</span> <span class="nf">wiener</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">logit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="wiener"><a class="viewcode-back" href="../index.html#norbert.wiener">[docs]</a><span class="k">def</span> <span class="nf">wiener</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">use_softmask</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">final_smoothing</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    apply a multichannel wiener filter to x.</span>
-<span class="sd">    the spatial statistics are estimated automatically with an EM algorithm,</span>
-<span class="sd">    using the values provided for the sources PSD as initializion.</span>
+<span class="sd">    a first estimate is obtained through soft masking or direct reconstruction,</span>
+<span class="sd">    and then an iterative EM algorithm is applied to refine the results.</span>
+
+<span class="sd">    this notably leads to take the spatial (stereo) statistics of the signals</span>
+<span class="sd">    into account.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -434,21 +452,41 @@
 <span class="sd">        mixture signal</span>
 <span class="sd">    iterations: int</span>
 <span class="sd">        number of iterations for the EM algorithm</span>
-<span class="sd">    logit: None or float between 0 and 1</span>
-<span class="sd">        enable a compression of the initial softmask filter, see the doc for</span>
-<span class="sd">        softmask.</span>
+<span class="sd">    use_softmask: number</span>
+<span class="sd">        * if zero, then the mixture phase will directly be used with the</span>
+<span class="sd">        spectrogram for first estimation. Be careful that you need</span>
+<span class="sd">        __magnitude spectrogram estimates__ in that case (not power</span>
+<span class="sd">        spectrograms)</span>
+<span class="sd">        * if nonzero, will use a softmasking strategy instead.</span>
+<span class="sd">        hint: use zero only if your spectrogram model is pretty good.</span>
+<span class="sd">    final_smoothing: int</span>
+<span class="sd">        if &gt; 0, width of the Gaussian temporal blurring to apply to the</span>
+<span class="sd">        spectrograms before final separation. Introduces interference, but</span>
+<span class="sd">        reduces distortion.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)</span>
 <span class="sd">        estimated sources</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">max_abs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">10.</span>
-    <span class="n">x_scaled</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="n">max_abs</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">softmask</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x_scaled</span><span class="p">,</span> <span class="n">logit</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">use_softmask</span><span class="p">:</span>
+        <span class="c1"># if there&#39;s no iteration, don&#39;t forget smoothing</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">iterations</span> <span class="ow">and</span> <span class="n">final_smoothing</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">final_smoothing</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">softmask</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># no smoothing in any case in this setup</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">v</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]))</span>
 
-    <span class="k">if</span> <span class="n">iterations</span><span class="p">:</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">expectation_maximization</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x_scaled</span><span class="p">,</span> <span class="n">iterations</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">iterations</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">y</span>
+
+    <span class="c1"># we need to refine the estimates. Scales down the estimates for</span>
+    <span class="c1"># numerical stability</span>
+    <span class="n">max_abs</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">10.</span><span class="p">)</span>
+    <span class="n">x_scaled</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="n">max_abs</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">expectation_maximization</span><span class="p">(</span><span class="n">y</span><span class="o">/</span><span class="n">max_abs</span><span class="p">,</span> <span class="n">x_scaled</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span>
+                                 <span class="n">final_smoothing</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">y</span><span class="o">*</span><span class="n">max_abs</span></div>
 </pre></div>
 
