@@ -185,7 +185,7 @@ def _get_local_gaussian_model(y_j, eps=1.):
     return v_j, R_j
 
 
-def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0):
+def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0, eps=None):
     """expectation maximization,
     with initial values provided for the sources power spectral densities.
 
@@ -214,7 +214,9 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0):
         estimated spatial covariance matrices
     """
     # to avoid dividing by zero
-    eps = np.finfo(x.dtype).eps
+    #eps = np.finfo(x.dtype).eps
+    if eps is None:
+        eps = np.finfo(np.float64).eps
 
     # dimensions
     (nb_frames, nb_bins, nb_channels) = x.shape
@@ -256,7 +258,7 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0):
     return y, v, R
 
 
-def softmask(v, x, logit=None):
+def softmask(v, x, logit=None, eps=None):
     """
     apply simple ratio mask on all the channels of x, independently,
     using the values provided for the sources spectrograms for
@@ -279,7 +281,8 @@ def softmask(v, x, logit=None):
         estimated sources
     """
     # to avoid dividing by zero
-    eps = np.finfo(v.dtype).eps
+    if eps is None:
+        eps = np.finfo(np.float64).eps
     total_energy = np.sum(v, axis=-1, keepdims=True)
     filter = v/(eps + total_energy)
     if logit is not None:
@@ -287,7 +290,7 @@ def softmask(v, x, logit=None):
     return filter * x[..., None]
 
 
-def wiener(v, x, iterations=2, softmask=1, final_smoothing=0):
+def wiener(v, x, iterations=2, use_softmask=1, final_smoothing=0, eps=None):
     """
     apply a multichannel wiener filter to x.
     a first estimate is obtained through soft masking or direct reconstruction,
@@ -304,13 +307,13 @@ def wiener(v, x, iterations=2, softmask=1, final_smoothing=0):
         mixture signal
     iterations: int
         number of iterations for the EM algorithm
-    softmask: number
+    use_softmask: number
         * if zero, then the mixture phase will directly be used with the
         spectrogram for first estimation. Be careful that you need
         __magnitude spectrogram estimates__ in that case (not power
         spectrograms)
         * if nonzero, will use a softmasking strategy instead.
-        hint: use nonzero only if your spectrogram model is pretty good.
+        hint: use zero only if your spectrogram model is pretty good.
     final_smoothing: int
         if > 0, width of the Gaussian temporal blurring to apply to the
         spectrograms before final separation. Introduces interference, but
@@ -321,11 +324,11 @@ def wiener(v, x, iterations=2, softmask=1, final_smoothing=0):
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
         estimated sources
     """
-    if softmask:
+    if use_softmask:
         # if there's no iteration, don't forget smoothing
         if not iterations and final_smoothing > 0:
             v = smooth(v, final_smoothing)
-        y = softmask(v, x)
+        y = softmask(v, x, eps=eps)
     else:
         # no smoothing in any case in this setup
         y = v * np.exp(1j*np.angle(x[..., None]))
@@ -338,5 +341,5 @@ def wiener(v, x, iterations=2, softmask=1, final_smoothing=0):
     max_abs = max(1, np.abs(x).max()/10.)
     x_scaled = x / max_abs
     y = expectation_maximization(y/max_abs, x_scaled, iterations,
-                                 final_smoothing)[0]
+                                 final_smoothing, eps=eps)[0]
     return y*max_abs
