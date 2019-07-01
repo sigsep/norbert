@@ -186,7 +186,7 @@ def _get_local_gaussian_model(y_j, eps=1.):
 
 
 def expectation_maximization(
-    y, x, 
+    y, x,
     iterations=2, final_smoothing=0, verbose=0, eps=None
 ):
     """expectation maximization,
