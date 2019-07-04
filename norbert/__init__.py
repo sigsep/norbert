@@ -1,127 +1,7 @@
 import numpy as np
 import itertools
-from .contrib import compress_filter, smooth, residual, reduce_interferences
-
-
-def wiener(v, x, iterations=1, use_softmask=True, final_smoothing=0, eps=None):
-    """
-    Wiener-based separation for multichannel audio.
-
-    The method uses the (possibly multichannel) spectrograms `v` of the
-    sources to separate the (complex) Short Term Fourier Transform `x` of the
-    mix.
-    Separation is done in a sequential way by:
-        1. Getting an initial estimate. This can be done in two ways: either by
-           directly using the spectrograms with the mixture phase, or
-           by using :func:`softmask`.
-        2. Refinining these initial estimates through a call to
-           :func:`expectation_maximization`.
-
-    This implementation also allows to specify the epsilon value used for
-    regularization and enables a final smoothing of the spectrogram models
-    before final separation.
-
-    Parameters
-    ----------
-    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
-        spectrograms of the sources. This is a nonnegative tensor that is
-        usually the output of the actual separation method of the user.
-    x : np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]
-        STFT of the mixture signal.
-    iterations : int [scalar]
-        number of iterations for the EM algorithm
-    use_softmask : boolean
-        * if `False`, then the mixture phase will directly be used with the
-        spectrogram as initial estimates. :warning:coincoin
-        * if `True`, a softmasking strategy will be used as described in
-        :func:`softmask`.
-    final_smoothing: int [scalar]
-        if > 0, width of the Gaussian temporal blurring to apply to the
-        spectrograms before final separation. Introduces interference, but
-        reduces distortion.
-    eps : {None, float}
-        Epsilon value to use for computing the separations. This is used
-        whenever division with a model energy is performed, i.e. when
-        softmasking and when iterating the EM.
-        It can be understood as the energy of the additional white noise
-        that is taken out when separating.
-        If `None`, the default value is taken as `np.finfo(np.real(x[0])).eps`.
-
-    Returns
-    -------
-    y : np.ndarray [complex,shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
-        STFT of estimated sources
-
-    Note
-    ----
-    1. Be careful that you need * magnitude spectrogram estimates* for the
-       case `softmask==False`.
-    2. We recommand to use `softmask=False` only if your spectrogram model is
-       pretty good, e.g. when the output of a deep neural net. In the case
-       it is not so great, opt for an initial softmaskin strategy.
-    3. The epsilon value will have a huge impact on performance. If it's large,
-       only the parts of the signal with a significant energy will be kept in
-       the sources. This epsilon then directly controls the energy of the
-       reconstruction error.
-
-    Warning
-    -------
-    1. As in :func:`expectation_maximization`, we recommend converting the
-       mixture `x` to double precision `np.complex` *before* calling
-       :func:`wiener`.
-
-    """
-    if use_softmask:
-        # if there's no iteration, don't forget smoothing
-        if not iterations and final_smoothing > 0:
-            v = smooth(v, final_smoothing)
-        y = softmask(v, x, eps=eps)
-    else:
-        # no smoothing in any case in this setup
-        y = v * np.exp(1j*np.angle(x[..., None]))
-
-    if not iterations:
-        return y
-
-    # we need to refine the estimates. Scales down the estimates for
-    # numerical stability
-    max_abs = max(1, np.abs(x).max()/10.)
-    x_scaled = x / max_abs
-    y = expectation_maximization(y/max_abs, x_scaled, iterations,
-                                 final_smoothing, eps=eps)[0]
-    return y*max_abs
-
-
-def softmask(v, x, logit=None, eps=None):
-    """
-    apply simple ratio mask on all the channels of x, independently,
-    using the values provided for the sources spectrograms for
-    devising the masks
-
-    Parameters
-    ----------
-    v : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_sources)
-        spectrograms of the sources
-    x : ndarray, shape (nb_frames, nb_bins, nb_channels)
-        mixture signal
-    logit: None or float between 0 and 1
-        enable a compression of the filter, defaults to `None`. If not None,
-        gives the point above which the filter is brought closer to 1, and
-        under which it is brought closer to 0.
-
-    Returns
-    -------
-    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
-        estimated sources
-    """
-    # to avoid dividing by zero
-    if eps is None:
-        eps = np.finfo(v.dtype).eps
-    total_energy = np.sum(v, axis=-1, keepdims=True)
-    filter = v/(eps + total_energy)
-    if logit is not None:
-        filter = compress_filter(filter, eps, thresh=logit, multichannel=False)
-    return filter * x[..., None]
+from .contrib import compress_filter, smooth, residual_model
+from .contrib import reduce_interferences
 
 
 def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
@@ -133,12 +13,14 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
     enforcing multichannel consistency for the estimates. This usually means
     a better perceptual quality in terms of spatial artifacts.
 
-    The implementation follows the details presented in [2]_, taking
-    inspiration from the original EM algorithm proposed in [1]_ and its
+    The implementation follows the details presented in [1]_, taking
+    inspiration from the original EM algorithm proposed in [2]_ and its
     weighted refinement proposed in [3]_, [4]_.
     It works by iteratively:
+
      * Re-estimate source parameters (PSD and spatial covariance matrix)
        through :func:`get_local_gaussian_model`.
+
      * Separate again the mixture with the new parameters by first computing
        the new modelled mixture covariance matrices with :func:`get_mix_model`,
        prepare the Wiener filters through :func:`wiener_gain` and apply them
@@ -148,15 +30,19 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
     ----------
     y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
         initial estimates for the sources
+
     x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         complex STFT of the mixture signal
+
     iterations: int [scalar]
         number of iterations for the EM algorithm.
+
     final_smoothing: int [scalar]
         if > 0, then the power spectral densities obtained before the final
         separation will be blurred temporally. This trick introduces
         interferences, but reduces distortion and is sometimes appreciated
         by expert users.
+
     eps : float or None [scalar]
         The epsilon value to use for regularization and filters.
         If None,  the default will use the epsilon of np.real(x) dtype.
@@ -165,23 +51,25 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
     -------
     y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
         estimated sources after iterations
+
     v : np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]
         estimated power spectral densities
+
     R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]
         estimated spatial covariance matrices
 
     References
     ----------
-    .. [1] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
-        reverberant audio source separation using a full-rank spatial
-        covariance model." IEEE Transactions on Audio, Speech, and Language
-        Processing 18.7 (2010): 1830-1840.
-
-    .. [2] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
+    .. [1] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
         N. Takahashi and Y. Mitsufuji, "Improving music source separation based
         on deep neural networks through data augmentation and network
         blending." 2017 IEEE International Conference on Acoustics, Speech
         and Signal Processing (ICASSP). IEEE, 2017.
+
+    .. [2] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
+        reverberant audio source separation using a full-rank spatial
+        covariance model." IEEE Transactions on Audio, Speech, and Language
+        Processing 18.7 (2010): 1830-1840.
 
     .. [3] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel audio source
         separation with deep neural networks." IEEE/ACM Transactions on Audio,
@@ -197,9 +85,10 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
 
     Note
     -----
-        1. You need an initial estimate for the sources to apply this
+        * You need an initial estimate for the sources to apply this
            algorithm. This is precisely what the :func:`wiener` function does.
-        2. This algorithm *is not* an implementation of the "exact" EM
+
+        * This algorithm *is not* an implementation of the "exact" EM
            proposed in [1]_. In particular, it does compute the posterior
            covariance matrices the same way. Instead, it uses the simplified
            scheme initially proposed in [5]_ and further refined in [3]_, [4]_,
@@ -241,7 +130,8 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
     if verbose:
         print('Number of iterations: ', iterations)
     regularization = np.sqrt(eps) * (
-            _identity((nb_frames, nb_bins), nb_channels))
+            np.tile(np.eye(nb_channels, dtype=np.complex64),
+                    (nb_frames, nb_bins, 1, 1)))
     for it in range(iterations):
         # constructing the mixture covariance matrix. Doing it with a loop
         # to avoid storing anytime in RAM the whole 6D tensor
@@ -250,7 +140,7 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
 
         for j in range(nb_sources):
             # update the spectrogram model for source j
-            v[..., j], R[..., j] = _get_local_gaussian_model(
+            v[..., j], R[..., j] = get_local_gaussian_model(
                 y[..., j],
                 eps)
 
@@ -270,6 +160,154 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
     return y, v, R
 
 
+def wiener(v, x, iterations=1, use_softmask=True, final_smoothing=0, eps=None):
+    """Wiener-based separation for multichannel audio.
+
+    The method uses the (possibly multichannel) spectrograms `v` of the
+    sources to separate the (complex) Short Term Fourier Transform `x` of the
+    mix. Separation is done in a sequential way by:
+
+    * Getting an initial estimate. This can be done in two ways: either by
+      directly using the spectrograms with the mixture phase, or
+      by using :func:`softmask`.
+
+    * Refinining these initial estimates through a call to
+      :func:`expectation_maximization`.
+
+    This implementation also allows to specify the epsilon value used for
+    regularization and enables a final smoothing of the spectrogram models
+    before final separation. It is based on [1]_, [3]_, [4]_, [5]_.
+
+    Parameters
+    ----------
+
+    v : np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]
+        spectrograms of the sources. This is a nonnegative tensor that is
+        usually the output of the actual separation method of the user. The
+        spectrograms may be mono, but they need to be 4-dimensional in all
+        cases.
+
+    x : np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]
+        STFT of the mixture signal.
+
+    iterations : int [scalar]
+        number of iterations for the EM algorithm
+
+    use_softmask : boolean
+        * if `False`, then the mixture phase will directly be used with the
+        spectrogram as initial estimates. :warning:coincoin
+        * if `True`, a softmasking strategy will be used as described in
+        :func:`softmask`.
+
+    final_smoothing: int [scalar]
+        if > 0, width of the Gaussian temporal blurring to apply to the
+        spectrograms before final separation. Introduces interference, but
+        reduces distortion.
+
+    eps : {None, float}
+        Epsilon value to use for computing the separations. This is used
+        whenever division with a model energy is performed, i.e. when
+        softmasking and when iterating the EM.
+        It can be understood as the energy of the additional white noise
+        that is taken out when separating.
+        If `None`, the default value is taken as `np.finfo(np.real(x[0])).eps`.
+
+    Returns
+    -------
+
+    y : np.ndarray [complex,shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
+        STFT of estimated sources
+
+    Note
+    ----
+
+    * Be careful that you need * magnitude spectrogram estimates* for the
+      case `softmask==False`.
+    * We recommand to use `softmask=False` only if your spectrogram model is
+      pretty good, e.g. when the output of a deep neural net. In the case
+      it is not so great, opt for an initial softmaskin strategy.
+    * The epsilon value will have a huge impact on performance. If it's large,
+      only the parts of the signal with a significant energy will be kept in
+      the sources. This epsilon then directly controls the energy of the
+      reconstruction error.
+
+    Warning
+    -------
+    As in :func:`expectation_maximization`, we recommend converting the
+    mixture `x` to double precision `np.complex` *before* calling
+    :func:`wiener`.
+
+    """
+    if use_softmask:
+        # if there's no iteration, don't forget smoothing
+        if not iterations and final_smoothing > 0:
+            v = smooth(v, final_smoothing)
+        y = softmask(v, x, eps=eps)
+    else:
+        # no smoothing in any case in this setup
+        y = v * np.exp(1j*np.angle(x[..., None]))
+
+    if not iterations:
+        return y
+
+    # we need to refine the estimates. Scales down the estimates for
+    # numerical stability
+    max_abs = max(1, np.abs(x).max()/10.)
+    x_scaled = x / max_abs
+    y = expectation_maximization(y/max_abs, x_scaled, iterations,
+                                 final_smoothing, eps=eps)[0]
+    return y*max_abs
+
+
+def softmask(v, x, logit=None, eps=None):
+    """Separates a mixture with a ratio mask, using the provided sources
+    spectrograms estimates. Additionally allows compressing the mask with
+    a logit function for soft binarization.
+    The filter does *not* take multichannel correlations into account.
+
+    The masking strategy can be traced back to the work of N. Wiener in the
+    case of *power* spectrograms [6]_. In the case of *fractional* spectrograms
+    like magnitude, this filter is often referred to a "ratio mask", and
+    has been shown to be the optimal separation procedure under alpha-stable
+    assumptions [7]_.
+
+    Parameters
+    ----------
+    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
+        spectrograms of the sources
+
+    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
+        mixture signal
+
+    logit: {None, float between 0 and 1}
+        enable a compression of the filter. If not None, it is the threshold
+        value for the logit function: a softmask above this threshold is
+        brought closer to 1, and a softmask below is brought closer to 0.
+
+    Returns
+    -------
+    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
+        estimated sources
+
+    References
+    ----------
+    .. [6] N. Wiener,"Extrapolation, Inerpolation, and Smoothing of Stationary
+        Time Series." 1949.
+
+    .. [7] A. Liutkus and R. Badeau. "Generalized Wiener filtering with
+        fractional power spectrograms." 2015 IEEE International Conference on
+        Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2015.
+    """
+    # to avoid dividing by zero
+    if eps is None:
+        eps = np.finfo(np.real(x[0]).dtype).eps
+    total_energy = np.sum(v, axis=-1, keepdims=True)
+    filter = v/(eps + total_energy.astype(x.dtype))
+    if logit is not None:
+        filter = compress_filter(filter, eps, thresh=logit, multichannel=False)
+    return filter * x[..., None]
+
+
 def _invert(M, eps):
     """
     Invert matrices, with special fast handling of the 1x1 and 2x2 cases.
@@ -281,6 +319,7 @@ def _invert(M, eps):
     ----------
     M : np.ndarray [shape=(..., nb_channels, nb_channels)]
         matrices to invert: must be square along the last two dimensions
+
     eps : [scalar]
         regularization parameter to use _only in the case of matrices
         bigger than 2x2
@@ -315,13 +354,17 @@ def _invert(M, eps):
 def _wiener_gain(v_j, R_j, inv_Cxx):
     """
     Compute the wiener gain for separating one source, given all parameters.
+    It is the matrix applied to the mix to get the posterior mean of the source
+    as in [1]_
 
     Parameters
     ----------
     v_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         power spectral density of the target source.
+
     R_j : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]
         spatial covariance matrix of the target source
+
     inv_Cxx : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
         inverse of the mixture covariance matrices
 
@@ -344,12 +387,14 @@ def _wiener_gain(v_j, R_j, inv_Cxx):
 
 def _apply_filter(x, W):
     """
-    Applies a filter on the mixture
+    Applies a filter on the mixture. Just corresponds to a matrix
+    multiplication.
 
     Parameters
     ----------
     x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         STFT of the signal on which to apply the filter.
+
     W : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
         filtering matrices, as returned, e.g. by `_wiener_gain`
 
@@ -367,27 +412,6 @@ def _apply_filter(x, W):
     return y_hat
 
 
-def _identity(shape, nb_channels):
-    """
-    Constructs an identity matrix and duplicate it to reach target shape
-
-    Parameters
-    ----------
-    shape : tuple of int
-        result is duplicated to match this shape + (nb_channels, nb_channels)
-    nb_channels : int [scalar]
-        dimension of the identity matrix to generate
-
-    Returns
-    -------
-    identity : np.ndarray [shape=shape + (nb_channels, nb_channels)]
-        filtered signal
-    """
-    identity = np.tile(np.eye(nb_channels, dtype=np.complex64),
-                       shape+(1, 1))
-    return identity
-
-
 def _get_mix_model(v, R):
     """
     Compute the model covariance of a mixture based on local Gaussian models.
@@ -397,6 +421,7 @@ def _get_mix_model(v, R):
     ----------
     v : np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]
         Power spectral densities for the sources
+
     R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]
         Spatial covariance matrices of each sources
 
@@ -415,7 +440,7 @@ def _get_mix_model(v, R):
 
 def _covariance(y_j):
     """
-    Compute the empirical covariance for a source
+    Compute the empirical covariance for a source.
 
     Parameters
     ----------
@@ -436,11 +461,11 @@ def _covariance(y_j):
     return Cj
 
 
-def _get_local_gaussian_model(y_j, eps=1.):
+def get_local_gaussian_model(y_j, eps=1.):
     r"""
-    Compute the local Gaussian model for a source given the complex STFT.
+    Compute the local Gaussian model [1]_ for a source given the complex STFT.
     First get the PSD, and then the spatial covariance matrix, as done in
-    [1, 2]_
+    [1]_, [8]_
 
     Parameters
     ----------
@@ -458,15 +483,11 @@ def _get_local_gaussian_model(y_j, eps=1.):
 
     References
     ----------
-    .. [1] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
-        reverberant audio source separation using a full-rank spatial
-        covariance model." IEEE Transactions on Audio, Speech, and Language
-        Processing 18.7 (2010): 1830-1840.
-    .. [2] A. Liutkus and R. Badeau and G. Richard. "Low bitrate informed
+    .. [8] A. Liutkus and R. Badeau and G. Richard. "Low bitrate informed
         source separation of realistic mixtures." 2013 IEEE International
         Conference on Acoustics, Speech and Signal Processing. IEEE, 2013.
-
     """
+
     v_j = np.mean(np.abs(y_j)**2, axis=2)
 
     # compute the covariance of the source
@@ -474,7 +495,7 @@ def _get_local_gaussian_model(y_j, eps=1.):
 
     # updates the spatial covariance matrix
     # this is where there is a potential overflow problem for very long
-    # files, but we ignore this potential issue.
+    # files, but we ignore this potential issue and let it to the user.
     try:
         R_j = (
             np.sum(C_j, axis=0) /

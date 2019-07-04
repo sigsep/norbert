@@ -7,23 +7,42 @@ def _logit(W, threshold, slope):
     return 1. / (1.0 + np.exp(-slope*(W-threshold)))
 
 
-def residual(v, x, alpha=1):
+def residual_model(v, x, alpha=1):
     """
-    A model for the residual to the sources models v.
-    obtained with simple spectral subtraction after matching the model
-    with the mixture as best as possible, frequency wise
+    Compute a model for the residual based on spectral subtraction.
+
+    The method consists in two steps:
+
+    * The provided spectrograms are summed up to obtain the *input* model for
+      the mixture. This *input* model is scaled frequency-wide to best
+      fit with the actual observed mixture spectrogram.
+
+    * The residual model is obtained through spectral subtraction of the
+      input model from the mixture spectrogram, with flooring to 0.
 
     Parameters
     ----------
-    v : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_sources)
-        Power spectral densities for the sources
-    x : ndarray, shape (nb_frames, nb_bins, nb_channels)
+    v : np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]
+        Estimated spectrograms for the sources
+
+    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         complex mixture
+
+    alpha: float [scalar]
+        exponent for the spectrograms `v`. For instance, if `alpha==1`,
+        then `v` is homogoneous to magnitudes, and if `alpha==2`, `v`
+        is homogeneous to squared magnitudes.
 
     Returns
     -------
-    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)
-        Covariance matrix for the mixture
+    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]
+        Spectrograms of the sources, with an appended one for the residual.
+
+    Note
+    ----
+    It is not mandatory to input multichannel spectrograms. However, the
+    output spectrograms *will* be multichannel.
+
     """
     # to avoid dividing by zero
     eps = np.finfo(v.dtype).eps
@@ -58,21 +77,24 @@ def residual(v, x, alpha=1):
 
 def smooth(v, width=1, temporal=False):
     """
-    smooth a nonnegative ndarray. Simply apply a small Gaussian blur
+    smoothes a ndarray with a Gaussian blur.
 
     Parameters
     ----------
-    v : ndarray, shape (nb_frames, ...)
-        spectrograms of the sources
-    sigma : int
+    v : np.ndarray [shape=(nb_frames, ...)]
+        input array
+
+    sigma : int [scalar]
         lengthscale of the gaussian blur
-    temporal boolean
-        if True, will smooth only along time through 1d blur
+
+    temporal : boolean
+        if True, will smooth only along time through 1d blur. Will use a
+        multidimensional Gaussian blur otherwise.
 
     Returns
     -------
-    ndarray, shape=(nb_frames, nb_bins, [nb_channels], nb_sources)
-        filtered spectra
+    result : np.ndarray [shape=(nb_frames, ...)]
+        filtered array
 
     """
     if temporal:
@@ -82,27 +104,43 @@ def smooth(v, width=1, temporal=False):
 
 
 def reduce_interferences(v, thresh=0.6, slope=15):
-    """
-    reduce interferences between spectrograms with logit compression.
-    See [1]_.
+    r"""
+    Reduction of interferences between spectrograms.
+
+    The objective of the method is to redistribute the energy of the input in
+    order to "sparsify" spectrograms along the "source" dimension. This is
+    motivated by the fact that sources are somewhat sparse and it is hence
+    unlikely that they are all energetic at the same time-frequency bins.
+
+    The method is inspired from [1]_ with ad-hoc modifications.
+
+    Parameters
+    ----------
+    v : np.ndarray [shape=(..., nb_sources)]
+        non-negative data on which to apply interference reduction
+
+    thresh : float [scalar]
+        threshold for the compression, should be between 0 and 1. The closer
+        to 1, the more reduction of the interferences, at the price of more
+        distortion.
+
+    slope : float [scalar]
+            the slope at which binarization is done. The higher, the more
+            brutal
+
+    Returns
+    -------
+    v : np.ndarray [same shape as input]
+        `v` with reduced interferences
+
+
+    References
+    ----------
 
    .. [1] Thomas Prätzlich, Rachel Bittner, Antoine Liutkus, Meinard Müller.
            "Kernel additive modeling for interference reduction in multi-
            channel music recordings" Proc. of ICASSP 2015.
 
-    Parameters
-    ----------
-    v : ndarray, shape=(..., nb_sources)
-        non-negative data on which to apply interference reduction
-    thresh : float
-        threshold for the compression, should be between 0 and 1. The closer
-        to 1, the more distortion but the less interferences, hopefully
-    slope : float
-        the slope at which binarization is done. The higher, the more brutal
-
-    Returns
-    -------
-    ndarray, Same shape as the filter provided. `v` with reduced interferences
 
     """
     eps = np.finfo(np.float32).eps
@@ -112,38 +150,37 @@ def reduce_interferences(v, thresh=0.6, slope=15):
     return v
 
 
-def compress_filter(W, eps, thresh=0.6, slope=15, multichannel=True):
-    '''Applies a logit compression to a filter.
+def compress_filter(W, thresh=0.6, slope=15, multichannel=True):
+    '''Applies a logit compression to a filter. This enables to "binarize" a
+    separation filter. This allows to reduce interferences at the price
+    of distortion.
+
+    In the case of multichannel filters, decomposes them as the cascade of a
+    pure beamformer (selection of one direction in space), followed by a
+    single-channel mask. Then, compression is applied on the mask only.
 
     Parameters
     ----------
-    W : ndarray, arbitrary shape
-        filter on which to apply logit compression. if `multichannel` is False,
-        it should be real values between 0 and 1.
+    W : ndarray, shape=(..., nb_channels, nb_channels)
+        filter on which to apply logit compression.
+
     thresh : float
         threshold for the compression, should be between 0 and 1. The closer
-        to 1, the more distortion but the less interferences, hopefully
+        to 1, the less interferences, but the more distortion.
+
     slope : float
         the slope at which binarization is done. The higher, the more brutal
-    multichannel : boolean
-        indicate whether we decompose the filter as a beamforming and single
-        channel part. In such a case, filter must be of shape
-        (nb_frames, nb_bins, [nb_channels, nb_channels]), so either 2D or 4D.
-        if it's 2D, it's like multichannel=False. If it's
-        4D, the last two dimensions have to be equal.
 
     Returns
     -------
-    ndarray, shape=(nb_frames, nb_bins, [nb_channels, nb_channels])
-        Same shape as the filter provided. Compressed filter
+    W : np.ndarray [same shape as input]
+        Compressed filter
     '''
 
-    if W.shape[-1] != W.shape[-2]:
-        multichannel = False
-    if multichannel:
-        if len(W.shape) == 2:
-            W = W[..., None, None]
-        gains = np.trace(W, axis1=2, axis2=3)
+    eps = np.finfo(W).eps
+    nb_channels = W.shape[-1]
+    if nb_channels > 1:
+        gains = np.trace(W, axis1=-2, axis2=-1)
         W *= (_logit(gains, thresh, slope) / (eps + gains))[..., None, None]
     else:
         W = _logit(W, thresh, slope)
