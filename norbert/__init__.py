@@ -221,7 +221,8 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     Returns
     -------
 
-    y : np.ndarray [complex,shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
+    y : np.ndarray
+            [complex, shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
         STFT of estimated sources
 
     Note

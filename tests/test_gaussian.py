@@ -28,13 +28,19 @@ def nb_iterations(request):
     return request.param
 
 
+@pytest.fixture(params=[np.complex64, np.complex128])
+def dtype(request):
+    return request.param
+
+
 @pytest.fixture
-def X(request, nb_frames, nb_bins, nb_channels):
-    return np.random.random(
+def X(request, nb_frames, nb_bins, nb_channels, dtype):
+    Mix = np.random.random(
         (nb_frames, nb_bins, nb_channels)
     ) + np.random.random(
         (nb_frames, nb_bins, nb_channels)
     ) * 1j
+    return Mix.astype(dtype)
 
 
 @pytest.fixture
@@ -94,13 +100,12 @@ def test_silent_sources(X, V):
 
 
 def test_softmask(V, X):
-    X = X.shape[-1] * np.ones(X.shape)
-
+    X = (X.shape[-1] * np.ones(X.shape)).astype(np.complex128)
     Y = norbert.softmask(V, X)
     assert np.allclose(Y.sum(-1), X)
 
 
 def test_wiener(V, X):
-    X = X.shape[-1] * np.ones(X.shape)
+    X = (X.shape[-1] * np.ones(X.shape)).astype(np.complex128)
     Y = norbert.wiener(V, X)
     assert np.allclose(Y.sum(-1), X)
