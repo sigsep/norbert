@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to Norbert documentation! &mdash; Norbert  documentation</title>
+  <title>Welcome to Norbert API Documentation! &mdash; Norbert  documentation</title>
   
 
   
@@ -80,7 +80,7 @@
             
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Welcome to Norbert documentation!</a></li>
+<li><a class="reference internal" href="#">Welcome to Norbert API Documentation!</a></li>
 <li><a class="reference internal" href="#module-norbert">API documentation</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 <li><a class="reference internal" href="#citation">Citation</a></li>
@@ -129,7 +129,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>Welcome to Norbert documentation!</li>
+      <li>Welcome to Norbert API Documentation!</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -148,8 +148,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="welcome-to-norbert-documentation">
-<h1>Welcome to Norbert documentation!<a class="headerlink" href="#welcome-to-norbert-documentation" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="welcome-to-norbert-api-documentation">
+<h1>Welcome to Norbert API Documentation!<a class="headerlink" href="#welcome-to-norbert-api-documentation" title="Permalink to this headline">¶</a></h1>
+<img alt="norbert_wiener" src="https://user-images.githubusercontent.com/72940/45908695-15ce8900-bdfe-11e8-8420-78ad9bb32f84.jpg" />
+<p>Norbert is an implementation of multichannel Wiener filter, that is a very popular way of filtering multichannel audio for several applications, notably speech enhancement and source separation.</p>
+<p>This repository assumes you have some way of estimating power-spectrograms for all the audio sources (non-negative) composing a mixture. It then builds the filter that is appropriate for extracting those signals from a mixture, by optimally exploiting multichannel information (like in stereo signals). This is done in an iterative procedure called _Expectation <a href="#id20"><span class="problematic" id="id21">Maximization_</span></a>, where filtering and re-estimation of the parameters are iterated.</p>
+<p>Norbert implements mainly to core functions which are:</p>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
