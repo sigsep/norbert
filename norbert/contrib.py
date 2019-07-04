@@ -114,6 +114,13 @@ def reduce_interferences(v, thresh=0.6, slope=15):
 
     The method is inspired from [1]_ with ad-hoc modifications.
 
+    References
+    ----------
+
+   .. [1] Thomas Prätzlich, Rachel Bittner, Antoine Liutkus, Meinard Müller.
+           "Kernel additive modeling for interference reduction in multi-
+           channel music recordings" Proc. of ICASSP 2015.
+
     Parameters
     ----------
     v : np.ndarray [shape=(..., nb_sources)]
@@ -132,15 +139,6 @@ def reduce_interferences(v, thresh=0.6, slope=15):
     -------
     v : np.ndarray [same shape as input]
         `v` with reduced interferences
-
-
-    References
-    ----------
-
-   .. [1] Thomas Prätzlich, Rachel Bittner, Antoine Liutkus, Meinard Müller.
-           "Kernel additive modeling for interference reduction in multi-
-           channel music recordings" Proc. of ICASSP 2015.
-
 
     """
     eps = np.finfo(np.float32).eps

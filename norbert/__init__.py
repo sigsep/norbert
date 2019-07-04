@@ -26,6 +26,31 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
        prepare the Wiener filters through :func:`wiener_gain` and apply them
        with :func:`apply_filter``.
 
+    References
+    ----------
+    .. [1] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
+        N. Takahashi and Y. Mitsufuji, "Improving music source separation based
+        on deep neural networks through data augmentation and network
+        blending." 2017 IEEE International Conference on Acoustics, Speech
+        and Signal Processing (ICASSP). IEEE, 2017.
+
+    .. [2] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
+        reverberant audio source separation using a full-rank spatial
+        covariance model." IEEE Transactions on Audio, Speech, and Language
+        Processing 18.7 (2010): 1830-1840.
+
+    .. [3] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel audio source
+        separation with deep neural networks." IEEE/ACM Transactions on Audio,
+        Speech, and Language Processing 24.9 (2016): 1652-1664.
+
+    .. [4] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel music
+        separation with deep neural networks." 2016 24th European Signal
+        Processing Conference (EUSIPCO). IEEE, 2016.
+
+    .. [5] A. Liutkus and R. Badeau and G. Richard "Kernel additive models for
+        source separation." IEEE Transactions on Signal Processing
+        62.16 (2014): 4298-4310.
+
     Parameters
     ----------
     y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
@@ -58,45 +83,21 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
     R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]
         estimated spatial covariance matrices
 
-    References
-    ----------
-    .. [1] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
-        N. Takahashi and Y. Mitsufuji, "Improving music source separation based
-        on deep neural networks through data augmentation and network
-        blending." 2017 IEEE International Conference on Acoustics, Speech
-        and Signal Processing (ICASSP). IEEE, 2017.
-
-    .. [2] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
-        reverberant audio source separation using a full-rank spatial
-        covariance model." IEEE Transactions on Audio, Speech, and Language
-        Processing 18.7 (2010): 1830-1840.
-
-    .. [3] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel audio source
-        separation with deep neural networks." IEEE/ACM Transactions on Audio,
-        Speech, and Language Processing 24.9 (2016): 1652-1664.
-
-    .. [4] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel music
-        separation with deep neural networks." 2016 24th European Signal
-        Processing Conference (EUSIPCO). IEEE, 2016.
-
-    .. [5] A. Liutkus and R. Badeau and G. Richard "Kernel additive models for
-        source separation." IEEE Transactions on Signal Processing
-        62.16 (2014): 4298-4310.
 
     Note
     -----
         * You need an initial estimate for the sources to apply this
-           algorithm. This is precisely what the :func:`wiener` function does.
+          algorithm. This is precisely what the :func:`wiener` function does.
 
         * This algorithm *is not* an implementation of the "exact" EM
-           proposed in [1]_. In particular, it does compute the posterior
-           covariance matrices the same way. Instead, it uses the simplified
-           scheme initially proposed in [5]_ and further refined in [3]_, [4]_,
-           that boils down to just take the empirical covariance of the recent
-           source estimates, followed by a weighted average for the update
-           of the spatial covariance matrix. It has been empirically
-           demonstrated that this simplified algorithm is more robust for
-           music separation.
+          proposed in [1]_. In particular, it does compute the posterior
+          covariance matrices the same way. Instead, it uses the simplified
+          scheme initially proposed in [5]_ and further refined in [3]_, [4]_,
+          that boils down to just take the empirical covariance of the recent
+          source estimates, followed by a weighted average for the update
+          of the spatial covariance matrix. It has been empirically
+          demonstrated that this simplified algorithm is more robust for
+          music separation.
 
     Warning
     -------
@@ -176,7 +177,27 @@ def wiener(v, x, iterations=1, use_softmask=True, final_smoothing=0, eps=None):
 
     This implementation also allows to specify the epsilon value used for
     regularization and enables a final smoothing of the spectrogram models
-    before final separation. It is based on [1]_, [3]_, [4]_, [5]_.
+    before final separation. It is based on [1]_, [2]_, [3]_, [4]_.
+
+    References
+    ----------
+    .. [1] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
+        N. Takahashi and Y. Mitsufuji, "Improving music source separation based
+        on deep neural networks through data augmentation and network
+        blending." 2017 IEEE International Conference on Acoustics, Speech
+        and Signal Processing (ICASSP). IEEE, 2017.
+
+    .. [2] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel audio source
+        separation with deep neural networks." IEEE/ACM Transactions on Audio,
+        Speech, and Language Processing 24.9 (2016): 1652-1664.
+
+    .. [3] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel music
+        separation with deep neural networks." 2016 24th European Signal
+        Processing Conference (EUSIPCO). IEEE, 2016.
+
+    .. [4] A. Liutkus and R. Badeau and G. Richard "Kernel additive models for
+        source separation." IEEE Transactions on Signal Processing
+        62.16 (2014): 4298-4310.
 
     Parameters
     ----------
@@ -266,10 +287,19 @@ def softmask(v, x, logit=None, eps=None):
     The filter does *not* take multichannel correlations into account.
 
     The masking strategy can be traced back to the work of N. Wiener in the
-    case of *power* spectrograms [6]_. In the case of *fractional* spectrograms
+    case of *power* spectrograms [1]_. In the case of *fractional* spectrograms
     like magnitude, this filter is often referred to a "ratio mask", and
     has been shown to be the optimal separation procedure under alpha-stable
-    assumptions [7]_.
+    assumptions [2]_.
+
+    References
+    ----------
+    .. [1] N. Wiener,"Extrapolation, Inerpolation, and Smoothing of Stationary
+        Time Series." 1949.
+
+    .. [2] A. Liutkus and R. Badeau. "Generalized Wiener filtering with
+        fractional power spectrograms." 2015 IEEE International Conference on
+        Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2015.
 
     Parameters
     ----------
@@ -289,14 +319,6 @@ def softmask(v, x, logit=None, eps=None):
     ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)
         estimated sources
 
-    References
-    ----------
-    .. [6] N. Wiener,"Extrapolation, Inerpolation, and Smoothing of Stationary
-        Time Series." 1949.
-
-    .. [7] A. Liutkus and R. Badeau. "Generalized Wiener filtering with
-        fractional power spectrograms." 2015 IEEE International Conference on
-        Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2015.
     """
     # to avoid dividing by zero
     if eps is None:
@@ -357,6 +379,13 @@ def _wiener_gain(v_j, R_j, inv_Cxx):
     It is the matrix applied to the mix to get the posterior mean of the source
     as in [1]_
 
+    References
+    ----------
+    .. [1] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
+        reverberant audio source separation using a full-rank spatial
+        covariance model." IEEE Transactions on Audio, Speech, and Language
+        Processing 18.7 (2010): 1830-1840.
+
     Parameters
     ----------
     v_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
@@ -374,6 +403,7 @@ def _wiener_gain(v_j, R_j, inv_Cxx):
     G : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
         wiener filtering matrices, to apply to the mix at each time-frequency
         bin to get the target source estimate.
+
     """
     (_, nb_channels) = R_j.shape[:2]
 
@@ -465,7 +495,18 @@ def get_local_gaussian_model(y_j, eps=1.):
     r"""
     Compute the local Gaussian model [1]_ for a source given the complex STFT.
     First get the PSD, and then the spatial covariance matrix, as done in
-    [1]_, [8]_
+    [1]_, [2]_
+
+    References
+    ----------
+    .. [1] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
+        reverberant audio source separation using a full-rank spatial
+        covariance model." IEEE Transactions on Audio, Speech, and Language
+        Processing 18.7 (2010): 1830-1840.
+
+    .. [2] A. Liutkus and R. Badeau and G. Richard. "Low bitrate informed
+        source separation of realistic mixtures." 2013 IEEE International
+        Conference on Acoustics, Speech and Signal Processing. IEEE, 2013.
 
     Parameters
     ----------
@@ -481,11 +522,6 @@ def get_local_gaussian_model(y_j, eps=1.):
     R_J : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]
         Spatial covariance matrix of the source
 
-    References
-    ----------
-    .. [8] A. Liutkus and R. Badeau and G. Richard. "Low bitrate informed
-        source separation of realistic mixtures." 2013 IEEE International
-        Conference on Acoustics, Speech and Signal Processing. IEEE, 2013.
     """
 
     v_j = np.mean(np.abs(y_j)**2, axis=2)
