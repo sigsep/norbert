@@ -26,7 +26,7 @@ def residual(v, x, alpha=1):
         Covariance matrix for the mixture
     """
     # to avoid dividing by zero
-    eps = np.finfo(np.float).eps
+    eps = np.finfo(v.dtype).eps
 
     # spectrogram for the mixture
     vx = np.maximum(eps, np.abs(x)**alpha)
@@ -36,12 +36,18 @@ def residual(v, x, alpha=1):
 
     # quick trick to scale the provided spectrogram to fit the mixture where
     # the model has significant energy
-    gain = (
-        np.sum(vx*v_total, axis=0, keepdims=True) /
-        (eps+np.sum(v_total**2, axis=0, keepdims=True)))
-    v_g = v * gain[..., None]
+    try:
+        gain = (
+            np.sum(vx*v_total, axis=0, keepdims=True) /
+            (eps+np.sum(v_total**2, axis=0, keepdims=True)))
+        v_g = v * gain[..., None]
+    except Exception:
+        print('Automatic scaling for residual model failed. '
+              'This is probably due to a very long file. Trying '
+              'without it.')
+        v_g = v
 
-    # resum the sources to build the new current model
+    # re-sum the sources to build the new current model
     v_total = np.sum(v, axis=-1)
 
     # residual is difference between the observation and the model
