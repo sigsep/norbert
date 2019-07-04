@@ -152,26 +152,45 @@
     <span class="k">return</span> <span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">slope</span><span class="o">*</span><span class="p">(</span><span class="n">W</span><span class="o">-</span><span class="n">threshold</span><span class="p">)))</span>
 
 
-<div class="viewcode-block" id="residual"><a class="viewcode-back" href="../../index.html#norbert.contrib.residual">[docs]</a><span class="k">def</span> <span class="nf">residual</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="residual_model"><a class="viewcode-back" href="../../index.html#norbert.contrib.residual_model">[docs]</a><span class="k">def</span> <span class="nf">residual_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    A model for the residual to the sources models v.</span>
-<span class="sd">    obtained with simple spectral subtraction after matching the model</span>
-<span class="sd">    with the mixture as best as possible, frequency wise</span>
+<span class="sd">    Compute a model for the residual based on spectral subtraction.</span>
+
+<span class="sd">    The method consists in two steps:</span>
+
+<span class="sd">    * The provided spectrograms are summed up to obtain the *input* model for</span>
+<span class="sd">      the mixture. This *input* model is scaled frequency-wide to best</span>
+<span class="sd">      fit with the actual observed mixture spectrogram.</span>
+
+<span class="sd">    * The residual model is obtained through spectral subtraction of the</span>
+<span class="sd">      input model from the mixture spectrogram, with flooring to 0.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_sources)</span>
-<span class="sd">        Power spectral densities for the sources</span>
-<span class="sd">    x : ndarray, shape (nb_frames, nb_bins, nb_channels)</span>
+<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]</span>
+<span class="sd">        Estimated spectrograms for the sources</span>
+
+<span class="sd">    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        complex mixture</span>
+
+<span class="sd">    alpha: float [scalar]</span>
+<span class="sd">        exponent for the spectrograms `v`. For instance, if `alpha==1`,</span>
+<span class="sd">        then `v` is homogoneous to magnitudes, and if `alpha==2`, `v`</span>
+<span class="sd">        is homogeneous to squared magnitudes.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)</span>
-<span class="sd">        Covariance matrix for the mixture</span>
+<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]</span>
+<span class="sd">        Spectrograms of the sources, with an appended one for the residual.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    It is not mandatory to input multichannel spectrograms. However, the</span>
+<span class="sd">    output spectrograms *will* be multichannel.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># to avoid dividing by zero</span>
-    <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
 
     <span class="c1"># spectrogram for the mixture</span>
     <span class="n">vx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">eps</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="n">alpha</span><span class="p">)</span>
@@ -181,12 +200,18 @@
 
     <span class="c1"># quick trick to scale the provided spectrogram to fit the mixture where</span>
     <span class="c1"># the model has significant energy</span>
-    <span class="n">gain</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">vx</span><span class="o">*</span><span class="n">v_total</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span>
-        <span class="p">(</span><span class="n">eps</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v_total</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
-    <span class="n">v_g</span> <span class="o">=</span> <span class="n">v</span> <span class="o">*</span> <span class="n">gain</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">gain</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">vx</span><span class="o">*</span><span class="n">v_total</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span>
+            <span class="p">(</span><span class="n">eps</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v_total</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
+        <span class="n">v_g</span> <span class="o">=</span> <span class="n">v</span> <span class="o">*</span> <span class="n">gain</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Automatic scaling for residual model failed. &#39;</span>
+              <span class="s1">&#39;This is probably due to a very long file. Trying &#39;</span>
+              <span class="s1">&#39;without it.&#39;</span><span class="p">)</span>
+        <span class="n">v_g</span> <span class="o">=</span> <span class="n">v</span>
 
-    <span class="c1"># resum the sources to build the new current model</span>
+    <span class="c1"># re-sum the sources to build the new current model</span>
     <span class="n">v_total</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="c1"># residual is difference between the observation and the model</span>
@@ -197,21 +222,24 @@
 
 <div class="viewcode-block" id="smooth"><a class="viewcode-back" href="../../index.html#norbert.contrib.smooth">[docs]</a><span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">temporal</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    smooth a nonnegative ndarray. Simply apply a small Gaussian blur</span>
+<span class="sd">    smoothes a ndarray with a Gaussian blur.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : ndarray, shape (nb_frames, ...)</span>
-<span class="sd">        spectrograms of the sources</span>
-<span class="sd">    sigma : int</span>
+<span class="sd">    v : np.ndarray [shape=(nb_frames, ...)]</span>
+<span class="sd">        input array</span>
+
+<span class="sd">    sigma : int [scalar]</span>
 <span class="sd">        lengthscale of the gaussian blur</span>
-<span class="sd">    temporal boolean</span>
-<span class="sd">        if True, will smooth only along time through 1d blur</span>
+
+<span class="sd">    temporal : boolean</span>
+<span class="sd">        if True, will smooth only along time through 1d blur. Will use a</span>
+<span class="sd">        multidimensional Gaussian blur otherwise.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, [nb_channels], nb_sources)</span>
-<span class="sd">        filtered spectra</span>
+<span class="sd">    result : np.ndarray [shape=(nb_frames, ...)]</span>
+<span class="sd">        filtered array</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">temporal</span><span class="p">:</span>
@@ -221,9 +249,18 @@
 
 
 <div class="viewcode-block" id="reduce_interferences"><a class="viewcode-back" href="../../index.html#norbert.contrib.reduce_interferences">[docs]</a><span class="k">def</span> <span class="nf">reduce_interferences</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">slope</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    reduce interferences between spectrograms with logit compression.</span>
-<span class="sd">    See [1]_.</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reduction of interferences between spectrograms.</span>
+
+<span class="sd">    The objective of the method is to redistribute the energy of the input in</span>
+<span class="sd">    order to &quot;sparsify&quot; spectrograms along the &quot;source&quot; dimension. This is</span>
+<span class="sd">    motivated by the fact that sources are somewhat sparse and it is hence</span>
+<span class="sd">    unlikely that they are all energetic at the same time-frequency bins.</span>
+
+<span class="sd">    The method is inspired from [1]_ with ad-hoc modifications.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
 
 <span class="sd">   .. [1] Thomas Prätzlich, Rachel Bittner, Antoine Liutkus, Meinard Müller.</span>
 <span class="sd">           &quot;Kernel additive modeling for interference reduction in multi-</span>
@@ -231,17 +268,22 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : ndarray, shape=(..., nb_sources)</span>
+<span class="sd">    v : np.ndarray [shape=(..., nb_sources)]</span>
 <span class="sd">        non-negative data on which to apply interference reduction</span>
-<span class="sd">    thresh : float</span>
+
+<span class="sd">    thresh : float [scalar]</span>
 <span class="sd">        threshold for the compression, should be between 0 and 1. The closer</span>
-<span class="sd">        to 1, the more distortion but the less interferences, hopefully</span>
-<span class="sd">    slope : float</span>
-<span class="sd">        the slope at which binarization is done. The higher, the more brutal</span>
+<span class="sd">        to 1, the more reduction of the interferences, at the price of more</span>
+<span class="sd">        distortion.</span>
+
+<span class="sd">    slope : float [scalar]</span>
+<span class="sd">            the slope at which binarization is done. The higher, the more</span>
+<span class="sd">            brutal</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, Same shape as the filter provided. `v` with reduced interferences</span>
+<span class="sd">    v : np.ndarray [same shape as input]</span>
+<span class="sd">        `v` with reduced interferences</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
@@ -251,38 +293,37 @@
     <span class="k">return</span> <span class="n">v</span></div>
 
 
-<div class="viewcode-block" id="compress_filter"><a class="viewcode-back" href="../../index.html#norbert.contrib.compress_filter">[docs]</a><span class="k">def</span> <span class="nf">compress_filter</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">slope</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">multichannel</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;Applies a logit compression to a filter.</span>
+<div class="viewcode-block" id="compress_filter"><a class="viewcode-back" href="../../index.html#norbert.contrib.compress_filter">[docs]</a><span class="k">def</span> <span class="nf">compress_filter</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">slope</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">multichannel</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Applies a logit compression to a filter. This enables to &quot;binarize&quot; a</span>
+<span class="sd">    separation filter. This allows to reduce interferences at the price</span>
+<span class="sd">    of distortion.</span>
+
+<span class="sd">    In the case of multichannel filters, decomposes them as the cascade of a</span>
+<span class="sd">    pure beamformer (selection of one direction in space), followed by a</span>
+<span class="sd">    single-channel mask. Then, compression is applied on the mask only.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    W : ndarray, arbitrary shape</span>
-<span class="sd">        filter on which to apply logit compression. if `multichannel` is False,</span>
-<span class="sd">        it should be real values between 0 and 1.</span>
+<span class="sd">    W : ndarray, shape=(..., nb_channels, nb_channels)</span>
+<span class="sd">        filter on which to apply logit compression.</span>
+
 <span class="sd">    thresh : float</span>
 <span class="sd">        threshold for the compression, should be between 0 and 1. The closer</span>
-<span class="sd">        to 1, the more distortion but the less interferences, hopefully</span>
+<span class="sd">        to 1, the less interferences, but the more distortion.</span>
+
 <span class="sd">    slope : float</span>
 <span class="sd">        the slope at which binarization is done. The higher, the more brutal</span>
-<span class="sd">    multichannel : boolean</span>
-<span class="sd">        indicate whether we decompose the filter as a beamforming and single</span>
-<span class="sd">        channel part. In such a case, filter must be of shape</span>
-<span class="sd">        (nb_frames, nb_bins, [nb_channels, nb_channels]), so either 2D or 4D.</span>
-<span class="sd">        if it&#39;s 2D, it&#39;s like multichannel=False. If it&#39;s</span>
-<span class="sd">        4D, the last two dimensions have to be equal.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, [nb_channels, nb_channels])</span>
-<span class="sd">        Same shape as the filter provided. Compressed filter</span>
+<span class="sd">    W : np.ndarray [same shape as input]</span>
+<span class="sd">        Compressed filter</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
-    <span class="k">if</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]:</span>
-        <span class="n">multichannel</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">if</span> <span class="n">multichannel</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">W</span> <span class="o">=</span> <span class="n">W</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
-        <span class="n">gains</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+    <span class="n">nb_channels</span> <span class="o">=</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">nb_channels</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">gains</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">W</span> <span class="o">*=</span> <span class="p">(</span><span class="n">_logit</span><span class="p">(</span><span class="n">gains</span><span class="p">,</span> <span class="n">thresh</span><span class="p">,</span> <span class="n">slope</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">eps</span> <span class="o">+</span> <span class="n">gains</span><span class="p">))[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">W</span> <span class="o">=</span> <span class="n">_logit</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">thresh</span><span class="p">,</span> <span class="n">slope</span><span class="p">)</span>

@@ -143,23 +143,337 @@
   <h1>Source code for norbert</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">from</span> <span class="nn">.contrib</span> <span class="k">import</span> <span class="n">residual</span><span class="p">,</span> <span class="n">reduce_interferences</span>
-<span class="kn">from</span> <span class="nn">.contrib</span> <span class="k">import</span> <span class="n">compress_filter</span><span class="p">,</span> <span class="n">smooth</span>
+<span class="kn">from</span> <span class="nn">.contrib</span> <span class="k">import</span> <span class="n">compress_filter</span><span class="p">,</span> <span class="n">smooth</span><span class="p">,</span> <span class="n">residual_model</span>
+<span class="kn">from</span> <span class="nn">.contrib</span> <span class="k">import</span> <span class="n">reduce_interferences</span>
 
 
-<div class="viewcode-block" id="invert"><a class="viewcode-back" href="../index.html#norbert.invert">[docs]</a><span class="k">def</span> <span class="nf">invert</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Inverting matrices</span>
+<div class="viewcode-block" id="expectation_maximization"><a class="viewcode-back" href="../index.html#norbert.expectation_maximization">[docs]</a><span class="k">def</span> <span class="nf">expectation_maximization</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Expectation maximization algorithm, for refining source separation</span>
+<span class="sd">    estimates.</span>
+
+<span class="sd">    This algorithm allows to make source separation results better by</span>
+<span class="sd">    enforcing multichannel consistency for the estimates. This usually means</span>
+<span class="sd">    a better perceptual quality in terms of spatial artifacts.</span>
+
+<span class="sd">    The implementation follows the details presented in [1]_, taking</span>
+<span class="sd">    inspiration from the original EM algorithm proposed in [2]_ and its</span>
+<span class="sd">    weighted refinement proposed in [3]_, [4]_.</span>
+<span class="sd">    It works by iteratively:</span>
+
+<span class="sd">     * Re-estimate source parameters (PSD and spatial covariance matrix)</span>
+<span class="sd">       through :func:`get_local_gaussian_model`.</span>
+
+<span class="sd">     * Separate again the mixture with the new parameters by first computing</span>
+<span class="sd">       the new modelled mixture covariance matrices with :func:`get_mix_model`,</span>
+<span class="sd">       prepare the Wiener filters through :func:`wiener_gain` and apply them</span>
+<span class="sd">       with :func:`apply_filter``.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and</span>
+<span class="sd">        N. Takahashi and Y. Mitsufuji, &quot;Improving music source separation based</span>
+<span class="sd">        on deep neural networks through data augmentation and network</span>
+<span class="sd">        blending.&quot; 2017 IEEE International Conference on Acoustics, Speech</span>
+<span class="sd">        and Signal Processing (ICASSP). IEEE, 2017.</span>
+
+<span class="sd">    .. [2] N.Q. Duong and E. Vincent and R.Gribonval. &quot;Under-determined</span>
+<span class="sd">        reverberant audio source separation using a full-rank spatial</span>
+<span class="sd">        covariance model.&quot; IEEE Transactions on Audio, Speech, and Language</span>
+<span class="sd">        Processing 18.7 (2010): 1830-1840.</span>
+
+<span class="sd">    .. [3] A. Nugraha and A. Liutkus and E. Vincent. &quot;Multichannel audio source</span>
+<span class="sd">        separation with deep neural networks.&quot; IEEE/ACM Transactions on Audio,</span>
+<span class="sd">        Speech, and Language Processing 24.9 (2016): 1652-1664.</span>
+
+<span class="sd">    .. [4] A. Nugraha and A. Liutkus and E. Vincent. &quot;Multichannel music</span>
+<span class="sd">        separation with deep neural networks.&quot; 2016 24th European Signal</span>
+<span class="sd">        Processing Conference (EUSIPCO). IEEE, 2016.</span>
+
+<span class="sd">    .. [5] A. Liutkus and R. Badeau and G. Richard &quot;Kernel additive models for</span>
+<span class="sd">        source separation.&quot; IEEE Transactions on Signal Processing</span>
+<span class="sd">        62.16 (2014): 4298-4310.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    M : ndarray, shape (..., nb_channels, nb_channels)</span>
-<span class="sd">        matrices to invert: must be square along the last two dimensions</span>
+<span class="sd">    y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
+<span class="sd">        initial estimates for the sources</span>
+
+<span class="sd">    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">        complex STFT of the mixture signal</span>
+
+<span class="sd">    iterations: int [scalar]</span>
+<span class="sd">        number of iterations for the EM algorithm.</span>
+
+<span class="sd">    verbose: boolean</span>
+<span class="sd">        display some information if True</span>
+
+<span class="sd">    eps : float or None [scalar]</span>
+<span class="sd">        The epsilon value to use for regularization and filters.</span>
+<span class="sd">        If None,  the default will use the epsilon of np.real(x) dtype.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(..., nb_channels, nb_channels)</span>
-<span class="sd">        invert of M</span>
+<span class="sd">    y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
+<span class="sd">        estimated sources after iterations</span>
+
+<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span>
+<span class="sd">        estimated power spectral densities</span>
+
+<span class="sd">    R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span>
+<span class="sd">        estimated spatial covariance matrices</span>
+
+
+<span class="sd">    Note</span>
+<span class="sd">    -----</span>
+<span class="sd">        * You need an initial estimate for the sources to apply this</span>
+<span class="sd">          algorithm. This is precisely what the :func:`wiener` function does.</span>
+
+<span class="sd">        * This algorithm *is not* an implementation of the &quot;exact&quot; EM</span>
+<span class="sd">          proposed in [1]_. In particular, it does compute the posterior</span>
+<span class="sd">          covariance matrices the same way. Instead, it uses the simplified</span>
+<span class="sd">          scheme initially proposed in [5]_ and further refined in [3]_, [4]_,</span>
+<span class="sd">          that boils down to just take the empirical covariance of the recent</span>
+<span class="sd">          source estimates, followed by a weighted average for the update</span>
+<span class="sd">          of the spatial covariance matrix. It has been empirically</span>
+<span class="sd">          demonstrated that this simplified algorithm is more robust for</span>
+<span class="sd">          music separation.</span>
+
+<span class="sd">    Warning</span>
+<span class="sd">    -------</span>
+<span class="sd">        It is *very* important to make sure `x.dtype` is `np.complex`</span>
+<span class="sd">        if you want double precision, because this function will **not**</span>
+<span class="sd">        do such conversion for you from `np.complex64`, in case you want the</span>
+<span class="sd">        smaller RAM usage on purpose.</span>
+
+<span class="sd">        It is usually always better in terms of quality to have double</span>
+<span class="sd">        precision, by e.g. calling :func:`expectation_maximization`</span>
+<span class="sd">        with ``x.astype(np.complex)``.</span>
+
+<span class="sd">        This is notably needed if you let common deep learning frameworks like</span>
+<span class="sd">        PyTorch or TensorFlow do the STFT, because this usually happens in</span>
+<span class="sd">        single precision.</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># to avoid dividing by zero</span>
+    <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+
+    <span class="c1"># dimensions</span>
+    <span class="p">(</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">nb_sources</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># allocate the spatial covariance matrices and PSD</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">,</span> <span class="n">nb_sources</span><span class="p">),</span> <span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_sources</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of iterations: &#39;</span><span class="p">,</span> <span class="n">iterations</span><span class="p">)</span>
+    <span class="n">regularization</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">nb_channels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex64</span><span class="p">),</span>
+                    <span class="p">(</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
+        <span class="c1"># constructing the mixture covariance matrix. Doing it with a loop</span>
+        <span class="c1"># to avoid storing anytime in RAM the whole 6D tensor</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;EM, iteration </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">it</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_sources</span><span class="p">):</span>
+            <span class="c1"># update the spectrogram model for source j</span>
+            <span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_local_gaussian_model</span><span class="p">(</span>
+                <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
+                <span class="n">eps</span><span class="p">)</span>
+
+        <span class="n">Cxx</span> <span class="o">=</span> <span class="n">_get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">)</span>
+        <span class="n">Cxx</span> <span class="o">+=</span> <span class="n">regularization</span>
+        <span class="n">inv_Cxx</span> <span class="o">=</span> <span class="n">_invert</span><span class="p">(</span><span class="n">Cxx</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+        <span class="c1"># separate the sources</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_sources</span><span class="p">):</span>
+            <span class="n">W_j</span> <span class="o">=</span> <span class="n">_wiener_gain</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">inv_Cxx</span><span class="p">)</span>
+            <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">_apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W_j</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">R</span></div>
+
+
+<div class="viewcode-block" id="wiener"><a class="viewcode-back" href="../index.html#norbert.wiener">[docs]</a><span class="k">def</span> <span class="nf">wiener</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">use_softmask</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wiener-based separation for multichannel audio.</span>
+
+<span class="sd">    The method uses the (possibly multichannel) spectrograms `v` of the</span>
+<span class="sd">    sources to separate the (complex) Short Term Fourier Transform `x` of the</span>
+<span class="sd">    mix. Separation is done in a sequential way by:</span>
+
+<span class="sd">    * Getting an initial estimate. This can be done in two ways: either by</span>
+<span class="sd">      directly using the spectrograms with the mixture phase, or</span>
+<span class="sd">      by using :func:`softmask`.</span>
+
+<span class="sd">    * Refinining these initial estimates through a call to</span>
+<span class="sd">      :func:`expectation_maximization`.</span>
+
+<span class="sd">    This implementation also allows to specify the epsilon value used for</span>
+<span class="sd">    regularization. It is based on [1]_, [2]_, [3]_, [4]_.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and</span>
+<span class="sd">        N. Takahashi and Y. Mitsufuji, &quot;Improving music source separation based</span>
+<span class="sd">        on deep neural networks through data augmentation and network</span>
+<span class="sd">        blending.&quot; 2017 IEEE International Conference on Acoustics, Speech</span>
+<span class="sd">        and Signal Processing (ICASSP). IEEE, 2017.</span>
+
+<span class="sd">    .. [2] A. Nugraha and A. Liutkus and E. Vincent. &quot;Multichannel audio source</span>
+<span class="sd">        separation with deep neural networks.&quot; IEEE/ACM Transactions on Audio,</span>
+<span class="sd">        Speech, and Language Processing 24.9 (2016): 1652-1664.</span>
+
+<span class="sd">    .. [3] A. Nugraha and A. Liutkus and E. Vincent. &quot;Multichannel music</span>
+<span class="sd">        separation with deep neural networks.&quot; 2016 24th European Signal</span>
+<span class="sd">        Processing Conference (EUSIPCO). IEEE, 2016.</span>
+
+<span class="sd">    .. [4] A. Liutkus and R. Badeau and G. Richard &quot;Kernel additive models for</span>
+<span class="sd">        source separation.&quot; IEEE Transactions on Signal Processing</span>
+<span class="sd">        62.16 (2014): 4298-4310.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]</span>
+<span class="sd">        spectrograms of the sources. This is a nonnegative tensor that is</span>
+<span class="sd">        usually the output of the actual separation method of the user. The</span>
+<span class="sd">        spectrograms may be mono, but they need to be 4-dimensional in all</span>
+<span class="sd">        cases.</span>
+
+<span class="sd">    x : np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">        STFT of the mixture signal.</span>
+
+<span class="sd">    iterations : int [scalar]</span>
+<span class="sd">        number of iterations for the EM algorithm</span>
+
+<span class="sd">    use_softmask : boolean</span>
+<span class="sd">        * if `False`, then the mixture phase will directly be used with the</span>
+<span class="sd">        spectrogram as initial estimates. :warning:coincoin</span>
+<span class="sd">        * if `True`, a softmasking strategy will be used as described in</span>
+<span class="sd">        :func:`softmask`.</span>
+
+<span class="sd">    eps : {None, float}</span>
+<span class="sd">        Epsilon value to use for computing the separations. This is used</span>
+<span class="sd">        whenever division with a model energy is performed, i.e. when</span>
+<span class="sd">        softmasking and when iterating the EM.</span>
+<span class="sd">        It can be understood as the energy of the additional white noise</span>
+<span class="sd">        that is taken out when separating.</span>
+<span class="sd">        If `None`, the default value is taken as `np.finfo(np.real(x[0])).eps`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    y : np.ndarray</span>
+<span class="sd">            [complex, shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
+<span class="sd">        STFT of estimated sources</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+
+<span class="sd">    * Be careful that you need * magnitude spectrogram estimates* for the</span>
+<span class="sd">      case `softmask==False`.</span>
+<span class="sd">    * We recommand to use `softmask=False` only if your spectrogram model is</span>
+<span class="sd">      pretty good, e.g. when the output of a deep neural net. In the case</span>
+<span class="sd">      it is not so great, opt for an initial softmaskin strategy.</span>
+<span class="sd">    * The epsilon value will have a huge impact on performance. If it&#39;s large,</span>
+<span class="sd">      only the parts of the signal with a significant energy will be kept in</span>
+<span class="sd">      the sources. This epsilon then directly controls the energy of the</span>
+<span class="sd">      reconstruction error.</span>
+
+<span class="sd">    Warning</span>
+<span class="sd">    -------</span>
+<span class="sd">    As in :func:`expectation_maximization`, we recommend converting the</span>
+<span class="sd">    mixture `x` to double precision `np.complex` *before* calling</span>
+<span class="sd">    :func:`wiener`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">use_softmask</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">softmask</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">v</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">iterations</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">y</span>
+
+    <span class="c1"># we need to refine the estimates. Scales down the estimates for</span>
+    <span class="c1"># numerical stability</span>
+    <span class="n">max_abs</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">10.</span><span class="p">)</span>
+    <span class="n">x_scaled</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="n">max_abs</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">expectation_maximization</span><span class="p">(</span><span class="n">y</span><span class="o">/</span><span class="n">max_abs</span><span class="p">,</span> <span class="n">x_scaled</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">y</span><span class="o">*</span><span class="n">max_abs</span></div>
+
+
+<div class="viewcode-block" id="softmask"><a class="viewcode-back" href="../index.html#norbert.softmask">[docs]</a><span class="k">def</span> <span class="nf">softmask</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Separates a mixture with a ratio mask, using the provided sources</span>
+<span class="sd">    spectrograms estimates. Additionally allows compressing the mask with</span>
+<span class="sd">    a logit function for soft binarization.</span>
+<span class="sd">    The filter does *not* take multichannel correlations into account.</span>
+
+<span class="sd">    The masking strategy can be traced back to the work of N. Wiener in the</span>
+<span class="sd">    case of *power* spectrograms [1]_. In the case of *fractional* spectrograms</span>
+<span class="sd">    like magnitude, this filter is often referred to a &quot;ratio mask&quot;, and</span>
+<span class="sd">    has been shown to be the optimal separation procedure under alpha-stable</span>
+<span class="sd">    assumptions [2]_.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] N. Wiener,&quot;Extrapolation, Inerpolation, and Smoothing of Stationary</span>
+<span class="sd">        Time Series.&quot; 1949.</span>
+
+<span class="sd">    .. [2] A. Liutkus and R. Badeau. &quot;Generalized Wiener filtering with</span>
+<span class="sd">        fractional power spectrograms.&quot; 2015 IEEE International Conference on</span>
+<span class="sd">        Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2015.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
+<span class="sd">        spectrograms of the sources</span>
+
+<span class="sd">    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">        mixture signal</span>
+
+<span class="sd">    logit: {None, float between 0 and 1}</span>
+<span class="sd">        enable a compression of the filter. If not None, it is the threshold</span>
+<span class="sd">        value for the logit function: a softmask above this threshold is</span>
+<span class="sd">        brought closer to 1, and a softmask below is brought closer to 0.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)</span>
+<span class="sd">        estimated sources</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># to avoid dividing by zero</span>
+    <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
+    <span class="n">total_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">filter</span> <span class="o">=</span> <span class="n">v</span><span class="o">/</span><span class="p">(</span><span class="n">eps</span> <span class="o">+</span> <span class="n">total_energy</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">logit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">filter</span> <span class="o">=</span> <span class="n">compress_filter</span><span class="p">(</span><span class="nb">filter</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="n">logit</span><span class="p">,</span> <span class="n">multichannel</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">filter</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span></div>
+
+
+<span class="k">def</span> <span class="nf">_invert</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Invert matrices, with special fast handling of the 1x1 and 2x2 cases.</span>
+
+<span class="sd">    Will generate errors if the matrices are singular: user must handle this</span>
+<span class="sd">    through his own regularization schemes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    M : np.ndarray [shape=(..., nb_channels, nb_channels)]</span>
+<span class="sd">        matrices to invert: must be square along the last two dimensions</span>
+
+<span class="sd">    eps : [scalar]</span>
+<span class="sd">        regularization parameter to use _only in the case of matrices</span>
+<span class="sd">        bigger than 2x2</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    invM : np.ndarray, [shape=M.shape]</span>
+<span class="sd">        inverses of M</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nb_channels</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">nb_channels</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -180,30 +494,40 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># general case : no use of analytical expression (slow!)</span>
         <span class="n">invM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">invM</span></div>
+    <span class="k">return</span> <span class="n">invM</span>
 
 
 <span class="k">def</span> <span class="nf">_wiener_gain</span><span class="p">(</span><span class="n">v_j</span><span class="p">,</span> <span class="n">R_j</span><span class="p">,</span> <span class="n">inv_Cxx</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    compute the wiener gain for separating one source</span>
+<span class="sd">    Compute the wiener gain for separating one source, given all parameters.</span>
+<span class="sd">    It is the matrix applied to the mix to get the posterior mean of the source</span>
+<span class="sd">    as in [1]_</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] N.Q. Duong and E. Vincent and R.Gribonval. &quot;Under-determined</span>
+<span class="sd">        reverberant audio source separation using a full-rank spatial</span>
+<span class="sd">        covariance model.&quot; IEEE Transactions on Audio, Speech, and Language</span>
+<span class="sd">        Processing 18.7 (2010): 1830-1840.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v_j : ndarray, shape (nb_frames, nb_bins, nb_channels).</span>
-<span class="sd">        power spectral density of the source.</span>
-<span class="sd">    R_j : ndarray, shape (nb_bins, nb_channels, nb_channels)</span>
-<span class="sd">        spatial covariance matrix of the source</span>
-<span class="sd">    inv_Cxx : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_channels)</span>
-<span class="sd">        inverse of the mixture covariance</span>
-<span class="sd">    x : ndarray, shape (nb_frames, nb_bins, nb_channels)</span>
-<span class="sd">        mixture on which to apply the Wiener gain.</span>
+<span class="sd">    v_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">        power spectral density of the target source.</span>
+
+<span class="sd">    R_j : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">        spatial covariance matrix of the target source</span>
+
+<span class="sd">    inv_Cxx : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">        inverse of the mixture covariance matrices</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels)</span>
-<span class="sd">        source estimate if x is provided and not None</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)</span>
-<span class="sd">        wiener filtering matrices</span>
+
+<span class="sd">    G : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">        wiener filtering matrices, to apply to the mix at each time-frequency</span>
+<span class="sd">        bin to get the target source estimate.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">)</span> <span class="o">=</span> <span class="n">R_j</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
 
@@ -217,51 +541,47 @@
 
 <span class="k">def</span> <span class="nf">_apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    applies a filter on the mixture</span>
+<span class="sd">    Applies a filter on the mixture. Just corresponds to a matrix</span>
+<span class="sd">    multiplication.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    x : ndarray, shape (nb_frames, nb_bins, nb_channels)</span>
-<span class="sd">        signal on which to apply the filter.</span>
-<span class="sd">    W: ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)</span>
-<span class="sd">        filtering matrices</span>
+<span class="sd">    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">        STFT of the signal on which to apply the filter.</span>
+
+<span class="sd">    W : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">        filtering matrices, as returned, e.g. by `_wiener_gain`</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels)</span>
+<span class="sd">    y_hat : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        filtered signal</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nb_channels</span> <span class="o">=</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
     <span class="c1"># apply the filter</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span>
+    <span class="n">y_hat</span> <span class="o">=</span> <span class="mi">0</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_channels</span><span class="p">):</span>
-        <span class="n">result</span> <span class="o">+=</span> <span class="n">W</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">result</span>
-
-
-<span class="k">def</span> <span class="nf">_identity</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">):</span>
-    <span class="c1"># constructs an identity matrix and append the specified shape before</span>
-    <span class="n">identity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">nb_channels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex64</span><span class="p">),</span>
-                       <span class="n">shape</span><span class="o">+</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">identity</span>
+        <span class="n">y_hat</span> <span class="o">+=</span> <span class="n">W</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">y_hat</span>
 
 
 <span class="k">def</span> <span class="nf">_get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    compute the covariance of a mixture based on local Gaussian models.</span>
+<span class="sd">    Compute the model covariance of a mixture based on local Gaussian models.</span>
 <span class="sd">    simply adds up all the v[..., j] * R[..., j]</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : ndarray, shape (nb_frames, nb_bins, nb_sources)</span>
+<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span>
 <span class="sd">        Power spectral densities for the sources</span>
-<span class="sd">    R : ndarray, shape (nb_bins, nb_channels, nb_channels, nb_sources)</span>
-<span class="sd">          Spatial covariance matrices of each sources</span>
+
+<span class="sd">    R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span>
+<span class="sd">        Spatial covariance matrices of each sources</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)</span>
+<span class="sd">    Cxx : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        Covariance matrix for the mixture</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nb_channels</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -274,17 +594,17 @@
 
 <span class="k">def</span> <span class="nf">_covariance</span><span class="p">(</span><span class="n">y_j</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    compute the covariance for a source</span>
+<span class="sd">    Compute the empirical covariance for a source.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    y_j : ndarray, shape (nb_frames, nb_bins, nb_channels).</span>
+<span class="sd">    y_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)].</span>
 <span class="sd">          complex stft of the source.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_channels)</span>
-<span class="sd">        just y_j * conj(y_j&#39;): empirical covariance for each TF bin.</span>
+<span class="sd">    Cj : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">        just y_j * conj(y_j.T): empirical covariance for each TF bin.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="p">(</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">)</span> <span class="o">=</span> <span class="n">y_j</span><span class="o">.</span><span class="n">shape</span>
     <span class="n">Cj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">),</span>
@@ -295,24 +615,39 @@
     <span class="k">return</span> <span class="n">Cj</span>
 
 
-<span class="k">def</span> <span class="nf">_get_local_gaussian_model</span><span class="p">(</span><span class="n">y_j</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    compute the local Gaussian model for a source. First get the</span>
-<span class="sd">    PSD, and then the spatial covariance matrix.</span>
+<div class="viewcode-block" id="get_local_gaussian_model"><a class="viewcode-back" href="../index.html#norbert.get_local_gaussian_model">[docs]</a><span class="k">def</span> <span class="nf">get_local_gaussian_model</span><span class="p">(</span><span class="n">y_j</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the local Gaussian model [1]_ for a source given the complex STFT.</span>
+<span class="sd">    First get the PSD, and then the spatial covariance matrix, as done in</span>
+<span class="sd">    [1]_, [2]_</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] N.Q. Duong and E. Vincent and R.Gribonval. &quot;Under-determined</span>
+<span class="sd">        reverberant audio source separation using a full-rank spatial</span>
+<span class="sd">        covariance model.&quot; IEEE Transactions on Audio, Speech, and Language</span>
+<span class="sd">        Processing 18.7 (2010): 1830-1840.</span>
+
+<span class="sd">    .. [2] A. Liutkus and R. Badeau and G. Richard. &quot;Low bitrate informed</span>
+<span class="sd">        source separation of realistic mixtures.&quot; 2013 IEEE International</span>
+<span class="sd">        Conference on Acoustics, Speech and Signal Processing. IEEE, 2013.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    y_j : ndarray, shape (nb_frames, nb_bins, nb_channels).</span>
+<span class="sd">    y_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">          complex stft of the source.</span>
-<span class="sd">    eps : float</span>
+<span class="sd">    eps : float [scalar]</span>
 <span class="sd">        regularization term</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins)</span>
+<span class="sd">    v_j: np.ndarray [shape=(nb_frames, nb_bins)]</span>
 <span class="sd">        PSD of the source</span>
-<span class="sd">    ndarray, shape=(nb_bins, nb_channels, nb_channels)</span>
+<span class="sd">    R_J : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        Spatial covariance matrix of the source</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">v_j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_j</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
     <span class="c1"># compute the covariance of the source</span>
@@ -320,174 +655,18 @@
 
     <span class="c1"># updates the spatial covariance matrix</span>
     <span class="c1"># this is where there is a potential overflow problem for very long</span>
-    <span class="c1"># files, but we ignore this potential issue.</span>
-    <span class="n">R_j</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">C_j</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span>
-        <span class="p">(</span><span class="n">eps</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v_j</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">v_j</span><span class="p">,</span> <span class="n">R_j</span>
-
-
-<div class="viewcode-block" id="expectation_maximization"><a class="viewcode-back" href="../index.html#norbert.expectation_maximization">[docs]</a><span class="k">def</span> <span class="nf">expectation_maximization</span><span class="p">(</span>
-    <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span>
-    <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">final_smoothing</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span>
-<span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;expectation maximization,</span>
-<span class="sd">    with initial values provided for the sources power spectral densities.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    y : ndarrays, shape (nb_frames, nb_bins, nb_channels, nb_sources)</span>
-<span class="sd">        Initial estimates for the sources</span>
-<span class="sd">    x : ndarray, shape (nb_frames, nb_bins, nb_channels)</span>
-<span class="sd">        mixture signal</span>
-<span class="sd">    iterations: int</span>
-<span class="sd">        number of iterations for the EM algorithm. 1 means processing the</span>
-<span class="sd">        channels independently with the same filter. More means computing</span>
-<span class="sd">        spatial statistics.</span>
-<span class="sd">    final_smoothing: int</span>
-<span class="sd">        if &gt; 0, width of the Gaussian temporal blurring to apply to the</span>
-<span class="sd">        spectrograms before final separation. Introduces interference, but</span>
-<span class="sd">        reduces distortion.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)</span>
-<span class="sd">        estimated sources</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_sources)</span>
-<span class="sd">        estimated power spectral densities</span>
-<span class="sd">    ndarray, shape=(nb_bins, nb_channels, nb_channels, nb_sources)</span>
-<span class="sd">        estimated spatial covariance matrices</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># to avoid dividing by zero</span>
-    <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
-
-    <span class="c1"># dimensions</span>
-    <span class="p">(</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
-    <span class="n">nb_sources</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-
-    <span class="c1"># allocate the spatial covariance matrices and PSD</span>
-    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">,</span> <span class="n">nb_sources</span><span class="p">),</span> <span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_sources</span><span class="p">))</span>
-
-    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of iterations: &#39;</span><span class="p">,</span> <span class="n">iterations</span><span class="p">)</span>
-    <span class="n">regularization</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
-            <span class="n">_identity</span><span class="p">((</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">),</span> <span class="n">nb_channels</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
-        <span class="c1"># constructing the mixture covariance matrix. Doing it with a loop</span>
-        <span class="c1"># to avoid storing anytime in RAM the whole 6D tensor</span>
-        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;EM, iteration </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">it</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
-
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_sources</span><span class="p">):</span>
-            <span class="c1"># update the spectrogram model for source j</span>
-            <span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_local_gaussian_model</span><span class="p">(</span>
-                <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
-                <span class="n">eps</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">it</span> <span class="o">==</span> <span class="n">iterations</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">final_smoothing</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;  smoothing spectrograms...&#39;</span><span class="p">)</span>
-            <span class="n">v</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">final_smoothing</span><span class="p">,</span> <span class="n">temporal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-        <span class="n">Cxx</span> <span class="o">=</span> <span class="n">_get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">)</span>
-        <span class="n">Cxx</span> <span class="o">+=</span> <span class="n">regularization</span>
-        <span class="n">inv_Cxx</span> <span class="o">=</span> <span class="n">invert</span><span class="p">(</span><span class="n">Cxx</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
-        <span class="c1"># separate the sources</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_sources</span><span class="p">):</span>
-            <span class="n">W_j</span> <span class="o">=</span> <span class="n">_wiener_gain</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">inv_Cxx</span><span class="p">)</span>
-            <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">_apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W_j</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">R</span></div>
-
-
-<div class="viewcode-block" id="softmask"><a class="viewcode-back" href="../index.html#norbert.softmask">[docs]</a><span class="k">def</span> <span class="nf">softmask</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">logit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    apply simple ratio mask on all the channels of x, independently,</span>
-<span class="sd">    using the values provided for the sources spectrograms for</span>
-<span class="sd">    devising the masks</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    v : ndarray, shape (nb_frames, nb_bins, nb_channels, nb_sources)</span>
-<span class="sd">        spectrograms of the sources</span>
-<span class="sd">    x : ndarray, shape (nb_frames, nb_bins, nb_channels)</span>
-<span class="sd">        mixture signal</span>
-<span class="sd">    logit: None or float between 0 and 1</span>
-<span class="sd">        enable a compression of the filter, defaults to `None`. If not None,</span>
-<span class="sd">        gives the point above which the filter is brought closer to 1, and</span>
-<span class="sd">        under which it is brought closer to 0.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)</span>
-<span class="sd">        estimated sources</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># to avoid dividing by zero</span>
-    <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
-    <span class="n">total_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="nb">filter</span> <span class="o">=</span> <span class="n">v</span><span class="o">/</span><span class="p">(</span><span class="n">eps</span> <span class="o">+</span> <span class="n">total_energy</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">logit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">filter</span> <span class="o">=</span> <span class="n">compress_filter</span><span class="p">(</span><span class="nb">filter</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="n">logit</span><span class="p">,</span> <span class="n">multichannel</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">filter</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span></div>
-
-
-<div class="viewcode-block" id="wiener"><a class="viewcode-back" href="../index.html#norbert.wiener">[docs]</a><span class="k">def</span> <span class="nf">wiener</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">use_softmask</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">final_smoothing</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    apply a multichannel wiener filter to x.</span>
-<span class="sd">    a first estimate is obtained through soft masking or direct reconstruction,</span>
-<span class="sd">    and then an iterative EM algorithm is applied to refine the results.</span>
-
-<span class="sd">    this notably leads to take the spatial (stereo) statistics of the signals</span>
-<span class="sd">    into account.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    v : ndarrays, shape (nb_frames, nb_bins, nb_channels, nb_sources)</span>
-<span class="sd">        spectrograms of the sources</span>
-<span class="sd">    x : ndarray, shape (nb_frames, nb_bins, nb_channels)</span>
-<span class="sd">        mixture signal</span>
-<span class="sd">    iterations: int</span>
-<span class="sd">        number of iterations for the EM algorithm</span>
-<span class="sd">    use_softmask: number</span>
-<span class="sd">        * if zero, then the mixture phase will directly be used with the</span>
-<span class="sd">        spectrogram for first estimation. Be careful that you need</span>
-<span class="sd">        __magnitude spectrogram estimates__ in that case (not power</span>
-<span class="sd">        spectrograms)</span>
-<span class="sd">        * if nonzero, will use a softmasking strategy instead.</span>
-<span class="sd">        hint: use zero only if your spectrogram model is pretty good.</span>
-<span class="sd">    final_smoothing: int</span>
-<span class="sd">        if &gt; 0, width of the Gaussian temporal blurring to apply to the</span>
-<span class="sd">        spectrograms before final separation. Introduces interference, but</span>
-<span class="sd">        reduces distortion.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ndarray, shape=(nb_frames, nb_bins, nb_channels, nb_sources)</span>
-<span class="sd">        estimated sources</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">use_softmask</span><span class="p">:</span>
-        <span class="c1"># if there&#39;s no iteration, don&#39;t forget smoothing</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">iterations</span> <span class="ow">and</span> <span class="n">final_smoothing</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">v</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">final_smoothing</span><span class="p">)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">softmask</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># no smoothing in any case in this setup</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">v</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]))</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">iterations</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">y</span>
-
-    <span class="c1"># we need to refine the estimates. Scales down the estimates for</span>
-    <span class="c1"># numerical stability</span>
-    <span class="n">max_abs</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">10.</span><span class="p">)</span>
-    <span class="n">x_scaled</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="n">max_abs</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">expectation_maximization</span><span class="p">(</span><span class="n">y</span><span class="o">/</span><span class="n">max_abs</span><span class="p">,</span> <span class="n">x_scaled</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span>
-                                 <span class="n">final_smoothing</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">y</span><span class="o">*</span><span class="n">max_abs</span></div>
+    <span class="c1"># files, but we ignore this potential issue and let it to the user.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">R_j</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">C_j</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span>
+            <span class="p">(</span><span class="n">eps</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v_j</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+              <span class="s1">&#39;There was a problem when computing the spatial covariance &#39;</span>
+              <span class="s1">&#39;matrix. Your mixture is probably too long for this &#39;</span>
+              <span class="s1">&#39;implementation&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">v_j</span><span class="p">,</span> <span class="n">R_j</span></div>
 </pre></div>
 
            </div>
