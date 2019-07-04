@@ -1,5 +1,4 @@
 # Norbert
-:warning: This package is currently work-in-progress
 
 ![norbert-wiener](https://user-images.githubusercontent.com/72940/45908695-15ce8900-bdfe-11e8-8420-78ad9bb32f84.jpg) 
 
