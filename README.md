@@ -21,3 +21,7 @@ From a more expert perspective, you will find the different ingredients from the
 ## Usage
 
 ...
+
+## License
+
+MIT
