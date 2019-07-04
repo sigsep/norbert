@@ -43,7 +43,7 @@ def V(request, nb_frames, nb_bins, nb_channels, nb_sources):
 
 
 def test_shapes(V, X):
-    Y = norbert.residual(V, X)
+    Y = norbert.residual_model(V, X)
     assert X.shape == Y.shape[:-1]
 
     Y = norbert.wiener(V, X)
@@ -77,7 +77,7 @@ def test_residual_copy(X, V):
     X0 = np.copy(X)
     V0 = np.copy(V)
 
-    _ = norbert.residual(V, X)
+    _ = norbert.residual_model(V, X)
 
     assert np.allclose(X0, X)
     assert np.allclose(V0, V)
@@ -97,4 +97,11 @@ def test_softmask(V, X):
     X = X.shape[-1] * np.ones(X.shape)
 
     Y = norbert.softmask(V, X)
+    assert np.allclose(Y.sum(-1), X)
+
+
+def test_wiener(V, X):
+    X = X.shape[-1] * np.ones(X.shape)
+    X = np.finfo(np.real(X)).eps
+    Y = norbert.wiener(V, X)
     assert np.allclose(Y.sum(-1), X)
