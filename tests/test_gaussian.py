@@ -102,6 +102,5 @@ def test_softmask(V, X):
 
 def test_wiener(V, X):
     X = X.shape[-1] * np.ones(X.shape)
-    X = np.finfo(np.real(X)).eps
     Y = norbert.wiener(V, X)
     assert np.allclose(Y.sum(-1), X)
