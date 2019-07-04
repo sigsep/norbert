@@ -4,8 +4,7 @@ from .contrib import compress_filter, smooth, residual_model
 from .contrib import reduce_interferences
 
 
-def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
-                             eps=None):
+def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
     r"""Expectation maximization algorithm, for refining source separation
     estimates.
 
@@ -62,11 +61,8 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
     iterations: int [scalar]
         number of iterations for the EM algorithm.
 
-    final_smoothing: int [scalar]
-        if > 0, then the power spectral densities obtained before the final
-        separation will be blurred temporally. This trick introduces
-        interferences, but reduces distortion and is sometimes appreciated
-        by expert users.
+    verbose: boolean
+        display some information if True
 
     eps : float or None [scalar]
         The epsilon value to use for regularization and filters.
@@ -145,11 +141,6 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
                 y[..., j],
                 eps)
 
-        if it == iterations - 1 and final_smoothing > 0:
-            if verbose:
-                print('  smoothing spectrograms...')
-            v = smooth(v, final_smoothing, temporal=True)
-
         Cxx = _get_mix_model(v, R)
         Cxx += regularization
         inv_Cxx = _invert(Cxx, eps)
@@ -161,7 +152,7 @@ def expectation_maximization(y, x, iterations=2, final_smoothing=0, verbose=0,
     return y, v, R
 
 
-def wiener(v, x, iterations=1, use_softmask=True, final_smoothing=0, eps=None):
+def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     """Wiener-based separation for multichannel audio.
 
     The method uses the (possibly multichannel) spectrograms `v` of the
@@ -176,8 +167,7 @@ def wiener(v, x, iterations=1, use_softmask=True, final_smoothing=0, eps=None):
       :func:`expectation_maximization`.
 
     This implementation also allows to specify the epsilon value used for
-    regularization and enables a final smoothing of the spectrogram models
-    before final separation. It is based on [1]_, [2]_, [3]_, [4]_.
+    regularization. It is based on [1]_, [2]_, [3]_, [4]_.
 
     References
     ----------
@@ -220,11 +210,6 @@ def wiener(v, x, iterations=1, use_softmask=True, final_smoothing=0, eps=None):
         * if `True`, a softmasking strategy will be used as described in
         :func:`softmask`.
 
-    final_smoothing: int [scalar]
-        if > 0, width of the Gaussian temporal blurring to apply to the
-        spectrograms before final separation. Introduces interference, but
-        reduces distortion.
-
     eps : {None, float}
         Epsilon value to use for computing the separations. This is used
         whenever division with a model energy is performed, i.e. when
@@ -260,12 +245,8 @@ def wiener(v, x, iterations=1, use_softmask=True, final_smoothing=0, eps=None):
 
     """
     if use_softmask:
-        # if there's no iteration, don't forget smoothing
-        if not iterations and final_smoothing > 0:
-            v = smooth(v, final_smoothing)
         y = softmask(v, x, eps=eps)
     else:
-        # no smoothing in any case in this setup
         y = v * np.exp(1j*np.angle(x[..., None]))
 
     if not iterations:
@@ -275,8 +256,7 @@ def wiener(v, x, iterations=1, use_softmask=True, final_smoothing=0, eps=None):
     # numerical stability
     max_abs = max(1, np.abs(x).max()/10.)
     x_scaled = x / max_abs
-    y = expectation_maximization(y/max_abs, x_scaled, iterations,
-                                 final_smoothing, eps=eps)[0]
+    y = expectation_maximization(y/max_abs, x_scaled, iterations, eps=eps)[0]
     return y*max_abs
 
 
