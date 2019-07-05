@@ -176,29 +176,6 @@
 <div class="section" id="module-norbert">
 <span id="api-documentation"></span><h1>API documentation<a class="headerlink" href="#module-norbert" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
-<dt id="norbert.apply_filter">
-<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">apply_filter</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">W</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#apply_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.apply_filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies a filter on the mixture. Just corresponds to a matrix
-multiplication.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>x</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>STFT of the signal on which to apply the filter.</p>
-</dd>
-<dt><strong>W</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>filtering matrices, as returned, e.g. by <a class="reference internal" href="#norbert.wiener_gain" title="norbert.wiener_gain"><code class="xref py py-func docutils literal notranslate"><span class="pre">wiener_gain()</span></code></a></p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>y_hat</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>filtered signal</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
 <dt id="norbert.expectation_maximization">
 <code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">expectation_maximization</code><span class="sig-paren">(</span><em class="sig-param">y</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=2</em>, <em class="sig-param">verbose=0</em>, <em class="sig-param">eps=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#expectation_maximization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.expectation_maximization" title="Permalink to this definition">¶</a></dt>
 <dd><p>Expectation maximization algorithm, for refining source separation
@@ -223,26 +200,26 @@ with <code class="xref py py-func docutils literal notranslate"><span class="pre
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>y</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span></dt><dd><p>initial estimates for the sources</p>
+<dt><strong>y: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</strong></dt><dd><p>initial estimates for the sources</p>
 </dd>
-<dt><strong>x</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>complex STFT of the mixture signal</p>
+<dt><strong>x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>complex STFT of the mixture signal</p>
 </dd>
 <dt><strong>iterations: int [scalar]</strong></dt><dd><p>number of iterations for the EM algorithm.</p>
 </dd>
 <dt><strong>verbose: boolean</strong></dt><dd><p>display some information if True</p>
 </dd>
-<dt><strong>eps</strong><span class="classifier">float or None [scalar]</span></dt><dd><p>The epsilon value to use for regularization and filters.
+<dt><strong>eps: float or None [scalar]</strong></dt><dd><p>The epsilon value to use for regularization and filters.
 If None,  the default will use the epsilon of np.real(x) dtype.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>y</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span></dt><dd><p>estimated sources after iterations</p>
+<dt>y: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</dt><dd><p>estimated sources after iterations</p>
 </dd>
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span></dt><dd><p>estimated power spectral densities</p>
+<dt>v: np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</dt><dd><p>estimated power spectral densities</p>
 </dd>
-<dt><strong>R</strong><span class="classifier">np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span></dt><dd><p>estimated spatial covariance matrices</p>
+<dt>R: np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</dt><dd><p>estimated spatial covariance matrices</p>
 </dd>
 </dl>
 </dd>
@@ -281,64 +258,82 @@ source separation.” IEEE Transactions on Signal Processing
 </dd></dl>
 
 <dl class="function">
-<dt id="norbert.get_local_gaussian_model">
-<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">get_local_gaussian_model</code><span class="sig-paren">(</span><em class="sig-param">y_j</em>, <em class="sig-param">eps=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#get_local_gaussian_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.get_local_gaussian_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the local Gaussian model <a class="reference internal" href="#r754ada52d1e1-1" id="id10">[1]</a> for a source given the complex STFT.
-First get the power spectral densities, and then the spatial covariance
-matrix, as done in <a class="reference internal" href="#r754ada52d1e1-1" id="id11">[1]</a>, <a class="reference internal" href="#r754ada52d1e1-2" id="id12">[2]</a></p>
-<dl class="field-list simple">
+<dt id="norbert.wiener">
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">wiener</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=1</em>, <em class="sig-param">use_softmask=True</em>, <em class="sig-param">eps=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#wiener"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.wiener" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wiener-based separation for multichannel audio.</p>
+<p>The method uses the (possibly multichannel) spectrograms <cite>v</cite> of the
+sources to separate the (complex) Short Term Fourier Transform <cite>x</cite> of the
+mix. Separation is done in a sequential way by:</p>
+<ul class="simple">
+<li><p>Getting an initial estimate. This can be done in two ways: either by
+directly using the spectrograms with the mixture phase, or
+by using <a class="reference internal" href="#norbert.softmask" title="norbert.softmask"><code class="xref py py-func docutils literal notranslate"><span class="pre">softmask()</span></code></a>.</p></li>
+<li><p>Refinining these initial estimates through a call to
+<a class="reference internal" href="#norbert.expectation_maximization" title="norbert.expectation_maximization"><code class="xref py py-func docutils literal notranslate"><span class="pre">expectation_maximization()</span></code></a>.</p></li>
+</ul>
+<p>This implementation also allows to specify the epsilon value used for
+regularization. It is based on <a class="reference internal" href="#rc817db496872-1" id="id10">[1]</a>, <a class="reference internal" href="#rc817db496872-2" id="id11">[2]</a>, <a class="reference internal" href="#rc817db496872-3" id="id12">[3]</a>, <a class="reference internal" href="#rc817db496872-4" id="id13">[4]</a>.</p>
+<dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>y_j</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>complex stft of the source.</p>
+<dt><strong>v: np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]</strong></dt><dd><p>spectrograms of the sources. This is a nonnegative tensor that is
+usually the output of the actual separation method of the user. The
+spectrograms may be mono, but they need to be 4-dimensional in all
+cases.</p>
 </dd>
-<dt><strong>eps</strong><span class="classifier">float [scalar]</span></dt><dd><p>regularization term</p>
+<dt><strong>x: np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>STFT of the mixture signal.</p>
+</dd>
+<dt><strong>iterations: int [scalar]</strong></dt><dd><p>number of iterations for the EM algorithm</p>
+</dd>
+<dt><strong>use_softmask: boolean</strong></dt><dd><ul class="simple">
+<li><p>if <cite>False</cite>, then the mixture phase will directly be used with the
+spectrogram as initial estimates.</p></li>
+<li><p>if <cite>True</cite>, a softmasking strategy will be used as described in
+<a class="reference internal" href="#norbert.softmask" title="norbert.softmask"><code class="xref py py-func docutils literal notranslate"><span class="pre">softmask()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt><strong>eps: {None, float}</strong></dt><dd><p>Epsilon value to use for computing the separations. This is used
+whenever division with a model energy is performed, i.e. when
+softmasking and when iterating the EM.
+It can be understood as the energy of the additional white noise
+that is taken out when separating.
+If <cite>None</cite>, the default value is taken as <cite>np.finfo(np.real(x[0])).eps</cite>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt>v_j: np.ndarray [shape=(nb_frames, nb_bins)]</dt><dd><p>power spectral density of the source</p>
-</dd>
-<dt><strong>R_J</strong><span class="classifier">np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>Spatial covariance matrix of the source</p>
+<dd class="field-even"><dl>
+<dt>y: np.ndarray</dt><dd><blockquote>
+<div><p>[complex, shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</p>
+</div></blockquote>
+<p>STFT of estimated sources</p>
 </dd>
 </dl>
 </dd>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r754ada52d1e1-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id10">1</a>,<a href="#id11">2</a>)</span></dt>
-<dd><p>N.Q. Duong and E. Vincent and R.Gribonval. “Under-determined
-reverberant audio source separation using a full-rank spatial
-covariance model.” IEEE Transactions on Audio, Speech, and Language
-Processing 18.7 (2010): 1830-1840.</p>
+<dt class="label" id="rc817db496872-1"><span class="brackets"><a class="fn-backref" href="#id10">1</a></span></dt>
+<dd><p>S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
+N. Takahashi and Y. Mitsufuji, “Improving music source separation based
+on deep neural networks through data augmentation and network
+blending.” 2017 IEEE International Conference on Acoustics, Speech
+and Signal Processing (ICASSP). IEEE, 2017.</p>
 </dd>
-<dt class="label" id="r754ada52d1e1-2"><span class="brackets"><a class="fn-backref" href="#id12">2</a></span></dt>
-<dd><p>A. Liutkus and R. Badeau and G. Richard. “Low bitrate informed
-source separation of realistic mixtures.” 2013 IEEE International
-Conference on Acoustics, Speech and Signal Processing. IEEE, 2013.</p>
+<dt class="label" id="rc817db496872-2"><span class="brackets"><a class="fn-backref" href="#id11">2</a></span></dt>
+<dd><p>A. Nugraha and A. Liutkus and E. Vincent. “Multichannel audio source
+separation with deep neural networks.” IEEE/ACM Transactions on Audio,
+Speech, and Language Processing 24.9 (2016): 1652-1664.</p>
 </dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="norbert.get_mix_model">
-<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">get_mix_model</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">R</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#get_mix_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.get_mix_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the model covariance of a mixture based on local Gaussian models.
-simply adds up all the v[…, j] * R[…, j]</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span></dt><dd><p>Power spectral densities for the sources</p>
+<dt class="label" id="rc817db496872-3"><span class="brackets"><a class="fn-backref" href="#id12">3</a></span></dt>
+<dd><p>A. Nugraha and A. Liutkus and E. Vincent. “Multichannel music
+separation with deep neural networks.” 2016 24th European Signal
+Processing Conference (EUSIPCO). IEEE, 2016.</p>
 </dd>
-<dt><strong>R</strong><span class="classifier">np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span></dt><dd><p>Spatial covariance matrices of each sources</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>Cxx</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>Covariance matrix for the mixture</p>
-</dd>
-</dl>
+<dt class="label" id="rc817db496872-4"><span class="brackets"><a class="fn-backref" href="#id13">4</a></span></dt>
+<dd><p>A. Liutkus and R. Badeau and G. Richard “Kernel additive models for
+source separation.” IEEE Transactions on Signal Processing
+62.16 (2014): 4298-4310.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -351,16 +346,16 @@ spectrograms estimates. Additionally allows compressing the mask with
 a logit function for soft binarization.
 The filter does <em>not</em> take multichannel correlations into account.</p>
 <p>The masking strategy can be traced back to the work of N. Wiener in the
-case of <em>power</em> spectrograms <a class="reference internal" href="#re97d5d0ff1a0-1" id="id15">[1]</a>. In the case of <em>fractional</em> spectrograms
+case of <em>power</em> spectrograms <a class="reference internal" href="#re97d5d0ff1a0-1" id="id18">[1]</a>. In the case of <em>fractional</em> spectrograms
 like magnitude, this filter is often referred to a “ratio mask”, and
 has been shown to be the optimal separation procedure under alpha-stable
-assumptions <a class="reference internal" href="#re97d5d0ff1a0-2" id="id16">[2]</a>.</p>
+assumptions <a class="reference internal" href="#re97d5d0ff1a0-2" id="id19">[2]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span></dt><dd><p>spectrograms of the sources</p>
+<dt><strong>v: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</strong></dt><dd><p>spectrograms of the sources</p>
 </dd>
-<dt><strong>x</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>mixture signal</p>
+<dt><strong>x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>mixture signal</p>
 </dd>
 <dt><strong>logit: {None, float between 0 and 1}</strong></dt><dd><p>enable a compression of the filter. If not None, it is the threshold
 value for the logit function: a softmask above this threshold is
@@ -377,95 +372,14 @@ brought closer to 1, and a softmask below is brought closer to 0.</p>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="re97d5d0ff1a0-1"><span class="brackets"><a class="fn-backref" href="#id15">1</a></span></dt>
+<dt class="label" id="re97d5d0ff1a0-1"><span class="brackets"><a class="fn-backref" href="#id18">1</a></span></dt>
 <dd><p>N. Wiener,”Extrapolation, Inerpolation, and Smoothing of Stationary
 Time Series.” 1949.</p>
 </dd>
-<dt class="label" id="re97d5d0ff1a0-2"><span class="brackets"><a class="fn-backref" href="#id16">2</a></span></dt>
+<dt class="label" id="re97d5d0ff1a0-2"><span class="brackets"><a class="fn-backref" href="#id19">2</a></span></dt>
 <dd><p>A. Liutkus and R. Badeau. “Generalized Wiener filtering with
 fractional power spectrograms.” 2015 IEEE International Conference on
 Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2015.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="norbert.wiener">
-<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">wiener</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">iterations=1</em>, <em class="sig-param">use_softmask=True</em>, <em class="sig-param">eps=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#wiener"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.wiener" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wiener-based separation for multichannel audio.</p>
-<p>The method uses the (possibly multichannel) spectrograms <cite>v</cite> of the
-sources to separate the (complex) Short Term Fourier Transform <cite>x</cite> of the
-mix. Separation is done in a sequential way by:</p>
-<ul class="simple">
-<li><p>Getting an initial estimate. This can be done in two ways: either by
-directly using the spectrograms with the mixture phase, or
-by using <a class="reference internal" href="#norbert.softmask" title="norbert.softmask"><code class="xref py py-func docutils literal notranslate"><span class="pre">softmask()</span></code></a>.</p></li>
-<li><p>Refinining these initial estimates through a call to
-<a class="reference internal" href="#norbert.expectation_maximization" title="norbert.expectation_maximization"><code class="xref py py-func docutils literal notranslate"><span class="pre">expectation_maximization()</span></code></a>.</p></li>
-</ul>
-<p>This implementation also allows to specify the epsilon value used for
-regularization. It is based on <a class="reference internal" href="#rc817db496872-1" id="id19">[1]</a>, <a class="reference internal" href="#rc817db496872-2" id="id20">[2]</a>, <a class="reference internal" href="#rc817db496872-3" id="id21">[3]</a>, <a class="reference internal" href="#rc817db496872-4" id="id22">[4]</a>.</p>
-<dl class="field-list">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]</span></dt><dd><p>spectrograms of the sources. This is a nonnegative tensor that is
-usually the output of the actual separation method of the user. The
-spectrograms may be mono, but they need to be 4-dimensional in all
-cases.</p>
-</dd>
-<dt><strong>x</strong><span class="classifier">np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>STFT of the mixture signal.</p>
-</dd>
-<dt><strong>iterations</strong><span class="classifier">int [scalar]</span></dt><dd><p>number of iterations for the EM algorithm</p>
-</dd>
-<dt><strong>use_softmask</strong><span class="classifier">boolean</span></dt><dd><ul class="simple">
-<li><p>if <cite>False</cite>, then the mixture phase will directly be used with the
-spectrogram as initial estimates.</p></li>
-<li><p>if <cite>True</cite>, a softmasking strategy will be used as described in
-<a class="reference internal" href="#norbert.softmask" title="norbert.softmask"><code class="xref py py-func docutils literal notranslate"><span class="pre">softmask()</span></code></a>.</p></li>
-</ul>
-</dd>
-<dt><strong>eps</strong><span class="classifier">{None, float}</span></dt><dd><p>Epsilon value to use for computing the separations. This is used
-whenever division with a model energy is performed, i.e. when
-softmasking and when iterating the EM.
-It can be understood as the energy of the additional white noise
-that is taken out when separating.
-If <cite>None</cite>, the default value is taken as <cite>np.finfo(np.real(x[0])).eps</cite>.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl>
-<dt><strong>y</strong><span class="classifier">np.ndarray</span></dt><dd><blockquote>
-<div><p>[complex, shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</p>
-</div></blockquote>
-<p>STFT of estimated sources</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="rc817db496872-1"><span class="brackets"><a class="fn-backref" href="#id19">1</a></span></dt>
-<dd><p>S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
-N. Takahashi and Y. Mitsufuji, “Improving music source separation based
-on deep neural networks through data augmentation and network
-blending.” 2017 IEEE International Conference on Acoustics, Speech
-and Signal Processing (ICASSP). IEEE, 2017.</p>
-</dd>
-<dt class="label" id="rc817db496872-2"><span class="brackets"><a class="fn-backref" href="#id20">2</a></span></dt>
-<dd><p>A. Nugraha and A. Liutkus and E. Vincent. “Multichannel audio source
-separation with deep neural networks.” IEEE/ACM Transactions on Audio,
-Speech, and Language Processing 24.9 (2016): 1652-1664.</p>
-</dd>
-<dt class="label" id="rc817db496872-3"><span class="brackets"><a class="fn-backref" href="#id21">3</a></span></dt>
-<dd><p>A. Nugraha and A. Liutkus and E. Vincent. “Multichannel music
-separation with deep neural networks.” 2016 24th European Signal
-Processing Conference (EUSIPCO). IEEE, 2016.</p>
-</dd>
-<dt class="label" id="rc817db496872-4"><span class="brackets"><a class="fn-backref" href="#id22">4</a></span></dt>
-<dd><p>A. Liutkus and R. Badeau and G. Richard “Kernel additive models for
-source separation.” IEEE Transactions on Signal Processing
-62.16 (2014): 4298-4310.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -475,21 +389,21 @@ source separation.” IEEE Transactions on Signal Processing
 <code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">wiener_gain</code><span class="sig-paren">(</span><em class="sig-param">v_j</em>, <em class="sig-param">R_j</em>, <em class="sig-param">inv_Cxx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#wiener_gain"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.wiener_gain" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the wiener gain for separating one source, given all parameters.
 It is the matrix applied to the mix to get the posterior mean of the source
-as in <a class="reference internal" href="#r2526576d5897-1" id="id27">[1]</a></p>
+as in <a class="reference internal" href="#r2526576d5897-1" id="id22">[1]</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v_j</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>power spectral density of the target source.</p>
+<dt><strong>v_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>power spectral density of the target source.</p>
 </dd>
-<dt><strong>R_j</strong><span class="classifier">np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>spatial covariance matrix of the target source</p>
+<dt><strong>R_j: np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</strong></dt><dd><p>spatial covariance matrix of the target source</p>
 </dd>
-<dt><strong>inv_Cxx</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>inverse of the mixture covariance matrices</p>
+<dt><strong>inv_Cxx: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</strong></dt><dd><p>inverse of the mixture covariance matrices</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>G</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>wiener filtering matrices, to apply to the mix, e.g. through
+<dt>G: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</dt><dd><p>wiener filtering matrices, to apply to the mix, e.g. through
 <a class="reference internal" href="#norbert.apply_filter" title="norbert.apply_filter"><code class="xref py py-func docutils literal notranslate"><span class="pre">apply_filter()</span></code></a> to get the target source estimate.</p>
 </dd>
 </dl>
@@ -497,7 +411,7 @@ as in <a class="reference internal" href="#r2526576d5897-1" id="id27">[1]</a></p
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r2526576d5897-1"><span class="brackets"><a class="fn-backref" href="#id27">1</a></span></dt>
+<dt class="label" id="r2526576d5897-1"><span class="brackets"><a class="fn-backref" href="#id22">1</a></span></dt>
 <dd><p>N.Q. Duong and E. Vincent and R.Gribonval. “Under-determined
 reverberant audio source separation using a full-rank spatial
 covariance model.” IEEE Transactions on Audio, Speech, and Language
@@ -506,30 +420,145 @@ Processing 18.7 (2010): 1830-1840.</p>
 </dl>
 </dd></dl>
 
-<span class="target" id="module-norbert.contrib"></span><dl class="function">
-<dt id="norbert.contrib.compress_filter">
-<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">compress_filter</code><span class="sig-paren">(</span><em class="sig-param">W</em>, <em class="sig-param">thresh=0.6</em>, <em class="sig-param">slope=15</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#compress_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.compress_filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies a logit compression to a filter. This enables to “binarize” a
-separation filter. This allows to reduce interferences at the price
-of distortion.</p>
-<p>In the case of multichannel filters, decomposes them as the cascade of a
-pure beamformer (selection of one direction in space), followed by a
-single-channel mask. Then, compression is applied on the mask only.</p>
+<dl class="function">
+<dt id="norbert.apply_filter">
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">apply_filter</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">W</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#apply_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.apply_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies a filter on the mixture. Just corresponds to a matrix
+multiplication.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>W</strong><span class="classifier">ndarray, shape=(…, nb_channels, nb_channels)</span></dt><dd><p>filter on which to apply logit compression.</p>
+<dt><strong>x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>STFT of the signal on which to apply the filter.</p>
 </dd>
-<dt><strong>thresh</strong><span class="classifier">float</span></dt><dd><p>threshold for the compression, should be between 0 and 1. The closer
-to 1, the less interferences, but the more distortion.</p>
-</dd>
-<dt><strong>slope</strong><span class="classifier">float</span></dt><dd><p>the slope at which binarization is done. The higher, the more brutal</p>
+<dt><strong>W: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</strong></dt><dd><p>filtering matrices, as returned, e.g. by <a class="reference internal" href="#norbert.wiener_gain" title="norbert.wiener_gain"><code class="xref py py-func docutils literal notranslate"><span class="pre">wiener_gain()</span></code></a></p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>W</strong><span class="classifier">np.ndarray [same shape as input]</span></dt><dd><p>Compressed filter</p>
+<dt>y_hat: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</dt><dd><p>filtered signal</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="norbert.get_mix_model">
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">get_mix_model</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">R</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#get_mix_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.get_mix_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the model covariance of a mixture based on local Gaussian models.
+simply adds up all the v[…, j] * R[…, j]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>v: np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</strong></dt><dd><p>Power spectral densities for the sources</p>
+</dd>
+<dt><strong>R: np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</strong></dt><dd><p>Spatial covariance matrices of each sources</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>Cxx: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</dt><dd><p>Covariance matrix for the mixture</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="norbert.get_local_gaussian_model">
+<code class="sig-prename descclassname">norbert.</code><code class="sig-name descname">get_local_gaussian_model</code><span class="sig-paren">(</span><em class="sig-param">y_j</em>, <em class="sig-param">eps=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert.html#get_local_gaussian_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.get_local_gaussian_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the local Gaussian model <a class="reference internal" href="#r754ada52d1e1-1" id="id24">[1]</a> for a source given the complex STFT.
+First get the power spectral densities, and then the spatial covariance
+matrix, as done in <a class="reference internal" href="#r754ada52d1e1-1" id="id25">[1]</a>, <a class="reference internal" href="#r754ada52d1e1-2" id="id26">[2]</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>complex stft of the source.</p>
+</dd>
+<dt><strong>eps: float [scalar]</strong></dt><dd><p>regularization term</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>v_j: np.ndarray [shape=(nb_frames, nb_bins)]</dt><dd><p>power spectral density of the source</p>
+</dd>
+<dt>R_J: np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</dt><dd><p>Spatial covariance matrix of the source</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r754ada52d1e1-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id24">1</a>,<a href="#id25">2</a>)</span></dt>
+<dd><p>N.Q. Duong and E. Vincent and R.Gribonval. “Under-determined
+reverberant audio source separation using a full-rank spatial
+covariance model.” IEEE Transactions on Audio, Speech, and Language
+Processing 18.7 (2010): 1830-1840.</p>
+</dd>
+<dt class="label" id="r754ada52d1e1-2"><span class="brackets"><a class="fn-backref" href="#id26">2</a></span></dt>
+<dd><p>A. Liutkus and R. Badeau and G. Richard. “Low bitrate informed
+source separation of realistic mixtures.” 2013 IEEE International
+Conference on Acoustics, Speech and Signal Processing. IEEE, 2013.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-norbert.contrib"></span><dl class="function">
+<dt id="norbert.contrib.residual_model">
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">residual_model</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">alpha=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#residual_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.residual_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute a model for the residual based on spectral subtraction.</p>
+<p>The method consists in two steps:</p>
+<ul class="simple">
+<li><p>The provided spectrograms are summed up to obtain the <em>input</em> model for
+the mixture. This <em>input</em> model is scaled frequency-wise to best
+fit with the actual observed mixture spectrogram.</p></li>
+<li><p>The residual model is obtained through spectral subtraction of the
+input model from the mixture spectrogram, with flooring to 0.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>v: np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]</strong></dt><dd><p>Estimated spectrograms for the sources</p>
+</dd>
+<dt><strong>x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>complex mixture</p>
+</dd>
+<dt><strong>alpha: float [scalar]</strong></dt><dd><p>exponent for the spectrograms <cite>v</cite>. For instance, if <cite>alpha==1</cite>,
+then <cite>v</cite> must be homogoneous to magnitudes, and if <cite>alpha==2</cite>, <cite>v</cite>
+must homogeneous to squared magnitudes.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>v: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]</dt><dd><p>Spectrograms of the sources, with an appended one for the residual.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="norbert.contrib.smooth">
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">smooth</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">width=1</em>, <em class="sig-param">temporal=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#smooth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.smooth" title="Permalink to this definition">¶</a></dt>
+<dd><p>smoothes a ndarray with a Gaussian blur.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>v: np.ndarray [shape=(nb_frames, …)]</strong></dt><dd><p>input array</p>
+</dd>
+<dt><strong>sigma: int [scalar]</strong></dt><dd><p>lengthscale of the gaussian blur</p>
+</dd>
+<dt><strong>temporal: boolean</strong></dt><dd><p>if True, will smooth only along time through 1d blur. Will use a
+multidimensional Gaussian blur otherwise.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>result: np.ndarray [shape=(nb_frames, …)]</dt><dd><p>filtered array</p>
 </dd>
 </dl>
 </dd>
@@ -550,15 +579,15 @@ unlikely that they are all energetic at the same time-frequency bins.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(…, nb_sources)]</span></dt><dd><blockquote>
+<dt><strong>v: np.ndarray [shape=(…, nb_sources)]</strong></dt><dd><blockquote>
 <div><p>non-negative data on which to apply interference reduction</p>
 </div></blockquote>
 <dl class="simple">
-<dt>thresh<span class="classifier">float [scalar]</span></dt><dd><p>threshold for the compression, should be between 0 and 1. The closer
+<dt>thresh: float [scalar]</dt><dd><p>threshold for the compression, should be between 0 and 1. The closer
 to 1, the more reduction of the interferences, at the price of more
 distortion.</p>
 </dd>
-<dt>slope<span class="classifier">float [scalar]</span></dt><dd><p>the slope at which binarization is done. The higher, the more
+<dt>slope: float [scalar]</dt><dd><p>the slope at which binarization is done. The higher, the more
 brutal</p>
 </dd>
 </dl>
@@ -567,7 +596,7 @@ brutal</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [same shape as input]</span></dt><dd><p><cite>v</cite> with reduced interferences</p>
+<dt>v: np.ndarray [same shape as input]</dt><dd><p><cite>v</cite> with reduced interferences</p>
 </dd>
 </dl>
 </dd>
@@ -583,58 +612,29 @@ channel music recordings” Proc. of ICASSP 2015.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="norbert.contrib.residual_model">
-<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">residual_model</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">alpha=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#residual_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.residual_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute a model for the residual based on spectral subtraction.</p>
-<p>The method consists in two steps:</p>
-<ul class="simple">
-<li><p>The provided spectrograms are summed up to obtain the <em>input</em> model for
-the mixture. This <em>input</em> model is scaled frequency-wise to best
-fit with the actual observed mixture spectrogram.</p></li>
-<li><p>The residual model is obtained through spectral subtraction of the
-input model from the mixture spectrogram, with flooring to 0.</p></li>
-</ul>
+<dt id="norbert.contrib.compress_filter">
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">compress_filter</code><span class="sig-paren">(</span><em class="sig-param">W</em>, <em class="sig-param">thresh=0.6</em>, <em class="sig-param">slope=15</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#compress_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.compress_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies a logit compression to a filter. This enables to “binarize” a
+separation filter. This allows to reduce interferences at the price
+of distortion.</p>
+<p>In the case of multichannel filters, decomposes them as the cascade of a
+pure beamformer (selection of one direction in space), followed by a
+single-channel mask. Then, compression is applied on the mask only.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]</span></dt><dd><p>Estimated spectrograms for the sources</p>
+<dt><strong>W: ndarray, shape=(…, nb_channels, nb_channels)</strong></dt><dd><p>filter on which to apply logit compression.</p>
 </dd>
-<dt><strong>x</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>complex mixture</p>
+<dt><strong>thresh: float</strong></dt><dd><p>threshold for the compression, should be between 0 and 1. The closer
+to 1, the less interferences, but the more distortion.</p>
 </dd>
-<dt><strong>alpha: float [scalar]</strong></dt><dd><p>exponent for the spectrograms <cite>v</cite>. For instance, if <cite>alpha==1</cite>,
-then <cite>v</cite> must be homogoneous to magnitudes, and if <cite>alpha==2</cite>, <cite>v</cite>
-must homogeneous to squared magnitudes.</p>
+<dt><strong>slope: float</strong></dt><dd><p>the slope at which binarization is done. The higher, the more brutal</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]</span></dt><dd><p>Spectrograms of the sources, with an appended one for the residual.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="norbert.contrib.smooth">
-<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">smooth</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">width=1</em>, <em class="sig-param">temporal=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#smooth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.smooth" title="Permalink to this definition">¶</a></dt>
-<dd><p>smoothes a ndarray with a Gaussian blur.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, …)]</span></dt><dd><p>input array</p>
-</dd>
-<dt><strong>sigma</strong><span class="classifier">int [scalar]</span></dt><dd><p>lengthscale of the gaussian blur</p>
-</dd>
-<dt><strong>temporal</strong><span class="classifier">boolean</span></dt><dd><p>if True, will smooth only along time through 1d blur. Will use a
-multidimensional Gaussian blur otherwise.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>result</strong><span class="classifier">np.ndarray [shape=(nb_frames, …)]</span></dt><dd><p>filtered array</p>
+<dt>W: np.ndarray [same shape as input]</dt><dd><p>Compressed filter</p>
 </dd>
 </dl>
 </dd>

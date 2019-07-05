@@ -166,10 +166,10 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]</span>
+<span class="sd">    v: np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]</span>
 <span class="sd">        Estimated spectrograms for the sources</span>
 
-<span class="sd">    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">    x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        complex mixture</span>
 
 <span class="sd">    alpha: float [scalar]</span>
@@ -179,7 +179,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]</span>
+<span class="sd">    v: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]</span>
 <span class="sd">        Spectrograms of the sources, with an appended one for the residual.</span>
 
 <span class="sd">    Note</span>
@@ -229,19 +229,19 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : np.ndarray [shape=(nb_frames, ...)]</span>
+<span class="sd">    v: np.ndarray [shape=(nb_frames, ...)]</span>
 <span class="sd">        input array</span>
 
-<span class="sd">    sigma : int [scalar]</span>
+<span class="sd">    sigma: int [scalar]</span>
 <span class="sd">        lengthscale of the gaussian blur</span>
 
-<span class="sd">    temporal : boolean</span>
+<span class="sd">    temporal: boolean</span>
 <span class="sd">        if True, will smooth only along time through 1d blur. Will use a</span>
 <span class="sd">        multidimensional Gaussian blur otherwise.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    result : np.ndarray [shape=(nb_frames, ...)]</span>
+<span class="sd">    result: np.ndarray [shape=(nb_frames, ...)]</span>
 <span class="sd">        filtered array</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -271,21 +271,21 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : np.ndarray [shape=(..., nb_sources)]</span>
+<span class="sd">    v: np.ndarray [shape=(..., nb_sources)]</span>
 <span class="sd">        non-negative data on which to apply interference reduction</span>
 
-<span class="sd">    thresh : float [scalar]</span>
+<span class="sd">    thresh: float [scalar]</span>
 <span class="sd">        threshold for the compression, should be between 0 and 1. The closer</span>
 <span class="sd">        to 1, the more reduction of the interferences, at the price of more</span>
 <span class="sd">        distortion.</span>
 
-<span class="sd">    slope : float [scalar]</span>
+<span class="sd">    slope: float [scalar]</span>
 <span class="sd">            the slope at which binarization is done. The higher, the more</span>
 <span class="sd">            brutal</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    v : np.ndarray [same shape as input]</span>
+<span class="sd">    v: np.ndarray [same shape as input]</span>
 <span class="sd">        `v` with reduced interferences</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -307,19 +307,19 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    W : ndarray, shape=(..., nb_channels, nb_channels)</span>
+<span class="sd">    W: ndarray, shape=(..., nb_channels, nb_channels)</span>
 <span class="sd">        filter on which to apply logit compression.</span>
 
-<span class="sd">    thresh : float</span>
+<span class="sd">    thresh: float</span>
 <span class="sd">        threshold for the compression, should be between 0 and 1. The closer</span>
 <span class="sd">        to 1, the less interferences, but the more distortion.</span>
 
-<span class="sd">    slope : float</span>
+<span class="sd">    slope: float</span>
 <span class="sd">        the slope at which binarization is done. The higher, the more brutal</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    W : np.ndarray [same shape as input]</span>
+<span class="sd">    W: np.ndarray [same shape as input]</span>
 <span class="sd">        Compressed filter</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
