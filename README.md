@@ -1,6 +1,6 @@
 # Norbert
 
-[![Build Status](https://travis-ci.org/sigsep/norbert.svg?branch=master)](https://travis-ci.org/sigsep/norbert)
+[![Build Status](https://travis-ci.com/sigsep/norbert.svg?branch=master)](https://travis-ci.com/sigsep/norbert)
 [![Latest Version](https://img.shields.io/pypi/v/norbert.svg)](https://pypi.python.org/pypi/norbert)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/norbert.svg)](https://pypi.python.org/pypi/norbert)
 
