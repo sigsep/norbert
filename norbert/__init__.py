@@ -200,17 +200,17 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     x: np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]
         STFT of the mixture signal.
 
-    iterations : int [scalar]
+    iterations: int [scalar]
         number of iterations for the EM algorithm
 
-    use_softmask : boolean
+    use_softmask: boolean
         * if `False`, then the mixture phase will directly be used with the
           spectrogram as initial estimates.
 
         * if `True`, a softmasking strategy will be used as described in
           :func:`softmask`.
 
-    eps : {None, float}
+    eps: {None, float}
         Epsilon value to use for computing the separations. This is used
         whenever division with a model energy is performed, i.e. when
         softmasking and when iterating the EM.
@@ -329,7 +329,7 @@ def _invert(M, eps):
 
     Returns
     -------
-    invM : np.ndarray, [shape=M.shape]
+    invM: np.ndarray, [shape=M.shape]
         inverses of M
     """
     nb_channels = M.shape[-1]
@@ -381,7 +381,7 @@ def wiener_gain(v_j, R_j, inv_Cxx):
     Returns
     -------
 
-    G : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
+    G: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
         wiener filtering matrices, to apply to the mix, e.g. through
         :func:`apply_filter` to get the target source estimate.
 
