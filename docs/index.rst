@@ -4,16 +4,19 @@ Welcome to Norbert API Documentation!
 .. image:: https://user-images.githubusercontent.com/72940/45908695-15ce8900-bdfe-11e8-8420-78ad9bb32f84.jpg
     :alt: norbert_wiener
 
-Norbert is an implementation of multichannel Wiener filter, that is a very popular way of filtering multichannel audio for several applications, notably speech enhancement and source separation.
+Norbert is an implementation of the multichannel Wiener filter, that is a very popular way of filtering multichannel audio in the time-frequency domain for several applications, notably speech enhancement and source separation.
 
-This repository assumes you have some way of estimating power-spectrograms for all the audio sources (non-negative) composing a mixture. It then builds the filter that is appropriate for extracting those signals from a mixture, by optimally exploiting multichannel information (like in stereo signals). This is done in an iterative procedure called _Expectation Maximization_, where filtering and re-estimation of the parameters are iterated.
+This filtering method assumes you have some way of estimating the (nonnegative) spectrograms for all the audio sources composing a mixture. If you only have a model for some *target* sources, and not for the rest, you may use :func:`norbert.contrib.residual_model` to let Norbert create a residual model for you.
 
-Norbert implements mainly to core functions which are:
+Given all source spectrograms and the mixture time-frequency representation, this repository can build and apply the filter that is appropriate for separation, by optimally exploiting multichannel information (like in stereo signals). This is done in an iterative procedure called *Expectation Maximization*, where filtering and re-estimation of the parameters are iterated.
+
+The core functions implemented in Norbert are:
 
 .. autosummary::
 
-   norbert.softmask
    norbert.wiener
+   norbert.contrib.residual_model
+   norbert.softmask
 
 API documentation
 =================
@@ -34,4 +37,3 @@ Indices and tables
 
 Citation
 ========
-

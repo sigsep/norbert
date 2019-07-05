@@ -17,8 +17,8 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
     weighted refinement proposed in [3]_, [4]_.
     It works by iteratively:
 
-     * Re-estimate source parameters (PSD and spatial covariance matrix)
-       through :func:`get_local_gaussian_model`.
+     * Re-estimate source parameters (power spectral densities and spatial
+       covariance matrices) through :func:`get_local_gaussian_model`.
 
      * Separate again the mixture with the new parameters by first computing
        the new modelled mixture covariance matrices with :func:`get_mix_model`,
@@ -87,13 +87,13 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
 
         * This algorithm *is not* an implementation of the "exact" EM
           proposed in [1]_. In particular, it does compute the posterior
-          covariance matrices the same way. Instead, it uses the simplified
-          scheme initially proposed in [5]_ and further refined in [3]_, [4]_,
-          that boils down to just take the empirical covariance of the recent
-          source estimates, followed by a weighted average for the update
-          of the spatial covariance matrix. It has been empirically
-          demonstrated that this simplified algorithm is more robust for
-          music separation.
+          covariance matrices the same (exact) way. Instead, it uses the
+          simplified approximate scheme initially proposed in [5]_ and further
+          refined in [3]_, [4]_, that boils down to just take the empirical
+          covariance of the recent source estimates, followed by a weighted
+          average for the update of the spatial covariance matrix. It has been
+          empirically demonstrated that this simplified algorithm is more
+          robust for music separation.
 
     Warning
     -------
@@ -109,7 +109,6 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
         This is notably needed if you let common deep learning frameworks like
         PyTorch or TensorFlow do the STFT, because this usually happens in
         single precision.
-
 
     """
     # to avoid dividing by zero
@@ -141,13 +140,13 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
                 y[..., j],
                 eps)
 
-        Cxx = _get_mix_model(v, R)
+        Cxx = get_mix_model(v, R)
         Cxx += regularization
         inv_Cxx = _invert(Cxx, eps)
         # separate the sources
         for j in range(nb_sources):
-            W_j = _wiener_gain(v[..., j], R[..., j], inv_Cxx)
-            y[..., j] = _apply_filter(x, W_j)
+            W_j = wiener_gain(v[..., j], R[..., j], inv_Cxx)
+            y[..., j] = apply_filter(x, W_j)
 
     return y, v, R
 
@@ -206,9 +205,10 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
 
     use_softmask : boolean
         * if `False`, then the mixture phase will directly be used with the
-        spectrogram as initial estimates. :warning:coincoin
+          spectrogram as initial estimates.
+
         * if `True`, a softmasking strategy will be used as described in
-        :func:`softmask`.
+          :func:`softmask`.
 
     eps : {None, float}
         Epsilon value to use for computing the separations. This is used
@@ -228,11 +228,11 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     Note
     ----
 
-    * Be careful that you need * magnitude spectrogram estimates* for the
+    * Be careful that you need *magnitude spectrogram estimates* for the
       case `softmask==False`.
     * We recommand to use `softmask=False` only if your spectrogram model is
       pretty good, e.g. when the output of a deep neural net. In the case
-      it is not so great, opt for an initial softmaskin strategy.
+      it is not so great, opt for an initial softmasking strategy.
     * The epsilon value will have a huge impact on performance. If it's large,
       only the parts of the signal with a significant energy will be kept in
       the sources. This epsilon then directly controls the energy of the
@@ -354,7 +354,7 @@ def _invert(M, eps):
     return invM
 
 
-def _wiener_gain(v_j, R_j, inv_Cxx):
+def wiener_gain(v_j, R_j, inv_Cxx):
     """
     Compute the wiener gain for separating one source, given all parameters.
     It is the matrix applied to the mix to get the posterior mean of the source
@@ -382,8 +382,8 @@ def _wiener_gain(v_j, R_j, inv_Cxx):
     -------
 
     G : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
-        wiener filtering matrices, to apply to the mix at each time-frequency
-        bin to get the target source estimate.
+        wiener filtering matrices, to apply to the mix, e.g. through
+        :func:`apply_filter` to get the target source estimate.
 
     """
     (_, nb_channels) = R_j.shape[:2]
@@ -396,7 +396,7 @@ def _wiener_gain(v_j, R_j, inv_Cxx):
     return G
 
 
-def _apply_filter(x, W):
+def apply_filter(x, W):
     """
     Applies a filter on the mixture. Just corresponds to a matrix
     multiplication.
@@ -407,7 +407,7 @@ def _apply_filter(x, W):
         STFT of the signal on which to apply the filter.
 
     W : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
-        filtering matrices, as returned, e.g. by `_wiener_gain`
+        filtering matrices, as returned, e.g. by :func:`wiener_gain`
 
     Returns
     -------
@@ -423,7 +423,7 @@ def _apply_filter(x, W):
     return y_hat
 
 
-def _get_mix_model(v, R):
+def get_mix_model(v, R):
     """
     Compute the model covariance of a mixture based on local Gaussian models.
     simply adds up all the v[..., j] * R[..., j]
@@ -475,8 +475,8 @@ def _covariance(y_j):
 def get_local_gaussian_model(y_j, eps=1.):
     r"""
     Compute the local Gaussian model [1]_ for a source given the complex STFT.
-    First get the PSD, and then the spatial covariance matrix, as done in
-    [1]_, [2]_
+    First get the power spectral densities, and then the spatial covariance
+    matrix, as done in [1]_, [2]_
 
     References
     ----------
@@ -499,7 +499,7 @@ def get_local_gaussian_model(y_j, eps=1.):
     Returns
     -------
     v_j: np.ndarray [shape=(nb_frames, nb_bins)]
-        PSD of the source
+        power spectral density of the source
     R_J : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]
         Spatial covariance matrix of the source
 

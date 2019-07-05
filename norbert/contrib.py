@@ -8,13 +8,12 @@ def _logit(W, threshold, slope):
 
 
 def residual_model(v, x, alpha=1):
-    """
-    Compute a model for the residual based on spectral subtraction.
+    r"""Compute a model for the residual based on spectral subtraction.
 
     The method consists in two steps:
 
     * The provided spectrograms are summed up to obtain the *input* model for
-      the mixture. This *input* model is scaled frequency-wide to best
+      the mixture. This *input* model is scaled frequency-wise to best
       fit with the actual observed mixture spectrogram.
 
     * The residual model is obtained through spectral subtraction of the
@@ -30,8 +29,8 @@ def residual_model(v, x, alpha=1):
 
     alpha: float [scalar]
         exponent for the spectrograms `v`. For instance, if `alpha==1`,
-        then `v` is homogoneous to magnitudes, and if `alpha==2`, `v`
-        is homogeneous to squared magnitudes.
+        then `v` must be homogoneous to magnitudes, and if `alpha==2`, `v`
+        must homogeneous to squared magnitudes.
 
     Returns
     -------
@@ -43,6 +42,10 @@ def residual_model(v, x, alpha=1):
     It is not mandatory to input multichannel spectrograms. However, the
     output spectrograms *will* be multichannel.
 
+    Warning
+    -------
+    You must be careful to set `alpha` as the exponent that corresponds to `v`.
+    In other words, *you must have*: ``np.abs(x)**alpha`` homogeneous to `v`.
     """
     # to avoid dividing by zero
     eps = np.finfo(v.dtype).eps
@@ -148,7 +151,7 @@ def reduce_interferences(v, thresh=0.6, slope=15):
     return v
 
 
-def compress_filter(W, thresh=0.6, slope=15, multichannel=True):
+def compress_filter(W, thresh=0.6, slope=15):
     '''Applies a logit compression to a filter. This enables to "binarize" a
     separation filter. This allows to reduce interferences at the price
     of distortion.
