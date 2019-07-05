@@ -200,26 +200,26 @@ with <code class="xref py py-func docutils literal notranslate"><span class="pre
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>y</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span></dt><dd><p>initial estimates for the sources</p>
+<dt><strong>y: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</strong></dt><dd><p>initial estimates for the sources</p>
 </dd>
-<dt><strong>x</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>complex STFT of the mixture signal</p>
+<dt><strong>x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>complex STFT of the mixture signal</p>
 </dd>
 <dt><strong>iterations: int [scalar]</strong></dt><dd><p>number of iterations for the EM algorithm.</p>
 </dd>
 <dt><strong>verbose: boolean</strong></dt><dd><p>display some information if True</p>
 </dd>
-<dt><strong>eps</strong><span class="classifier">float or None [scalar]</span></dt><dd><p>The epsilon value to use for regularization and filters.
+<dt><strong>eps: float or None [scalar]</strong></dt><dd><p>The epsilon value to use for regularization and filters.
 If None,  the default will use the epsilon of np.real(x) dtype.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>y</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span></dt><dd><p>estimated sources after iterations</p>
+<dt>y: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</dt><dd><p>estimated sources after iterations</p>
 </dd>
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span></dt><dd><p>estimated power spectral densities</p>
+<dt>v: np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</dt><dd><p>estimated power spectral densities</p>
 </dd>
-<dt><strong>R</strong><span class="classifier">np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span></dt><dd><p>estimated spatial covariance matrices</p>
+<dt>R: np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</dt><dd><p>estimated spatial covariance matrices</p>
 </dd>
 </dl>
 </dd>
@@ -276,12 +276,12 @@ regularization. It is based on <a class="reference internal" href="#rc817db49687
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]</span></dt><dd><p>spectrograms of the sources. This is a nonnegative tensor that is
+<dt><strong>v: np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]</strong></dt><dd><p>spectrograms of the sources. This is a nonnegative tensor that is
 usually the output of the actual separation method of the user. The
 spectrograms may be mono, but they need to be 4-dimensional in all
 cases.</p>
 </dd>
-<dt><strong>x</strong><span class="classifier">np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>STFT of the mixture signal.</p>
+<dt><strong>x: np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>STFT of the mixture signal.</p>
 </dd>
 <dt><strong>iterations</strong><span class="classifier">int [scalar]</span></dt><dd><p>number of iterations for the EM algorithm</p>
 </dd>
@@ -303,7 +303,7 @@ If <cite>None</cite>, the default value is taken as <cite>np.finfo(np.real(x[0])
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>y</strong><span class="classifier">np.ndarray</span></dt><dd><blockquote>
+<dt>y: np.ndarray</dt><dd><blockquote>
 <div><p>[complex, shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</p>
 </div></blockquote>
 <p>STFT of estimated sources</p>
@@ -353,9 +353,9 @@ assumptions <a class="reference internal" href="#re97d5d0ff1a0-2" id="id19">[2]<
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span></dt><dd><p>spectrograms of the sources</p>
+<dt><strong>v: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</strong></dt><dd><p>spectrograms of the sources</p>
 </dd>
-<dt><strong>x</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>mixture signal</p>
+<dt><strong>x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>mixture signal</p>
 </dd>
 <dt><strong>logit: {None, float between 0 and 1}</strong></dt><dd><p>enable a compression of the filter. If not None, it is the threshold
 value for the logit function: a softmask above this threshold is
@@ -393,11 +393,11 @@ as in <a class="reference internal" href="#r2526576d5897-1" id="id22">[1]</a></p
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v_j</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>power spectral density of the target source.</p>
+<dt><strong>v_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>power spectral density of the target source.</p>
 </dd>
-<dt><strong>R_j</strong><span class="classifier">np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>spatial covariance matrix of the target source</p>
+<dt><strong>R_j: np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</strong></dt><dd><p>spatial covariance matrix of the target source</p>
 </dd>
-<dt><strong>inv_Cxx</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>inverse of the mixture covariance matrices</p>
+<dt><strong>inv_Cxx: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</strong></dt><dd><p>inverse of the mixture covariance matrices</p>
 </dd>
 </dl>
 </dd>
@@ -428,15 +428,15 @@ multiplication.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>x</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>STFT of the signal on which to apply the filter.</p>
+<dt><strong>x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>STFT of the signal on which to apply the filter.</p>
 </dd>
-<dt><strong>W</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>filtering matrices, as returned, e.g. by <a class="reference internal" href="#norbert.wiener_gain" title="norbert.wiener_gain"><code class="xref py py-func docutils literal notranslate"><span class="pre">wiener_gain()</span></code></a></p>
+<dt><strong>W: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</strong></dt><dd><p>filtering matrices, as returned, e.g. by <a class="reference internal" href="#norbert.wiener_gain" title="norbert.wiener_gain"><code class="xref py py-func docutils literal notranslate"><span class="pre">wiener_gain()</span></code></a></p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>y_hat</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>filtered signal</p>
+<dt>y_hat: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</dt><dd><p>filtered signal</p>
 </dd>
 </dl>
 </dd>
@@ -451,15 +451,15 @@ simply adds up all the v[…, j] * R[…, j]</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span></dt><dd><p>Power spectral densities for the sources</p>
+<dt><strong>v: np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</strong></dt><dd><p>Power spectral densities for the sources</p>
 </dd>
-<dt><strong>R</strong><span class="classifier">np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span></dt><dd><p>Spatial covariance matrices of each sources</p>
+<dt><strong>R: np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</strong></dt><dd><p>Spatial covariance matrices of each sources</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>Cxx</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>Covariance matrix for the mixture</p>
+<dt>Cxx: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</dt><dd><p>Covariance matrix for the mixture</p>
 </dd>
 </dl>
 </dd>
@@ -475,9 +475,9 @@ matrix, as done in <a class="reference internal" href="#r754ada52d1e1-1" id="id2
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>y_j</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>complex stft of the source.</p>
+<dt><strong>y_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>complex stft of the source.</p>
 </dd>
-<dt><strong>eps</strong><span class="classifier">float [scalar]</span></dt><dd><p>regularization term</p>
+<dt><strong>eps: float [scalar]</strong></dt><dd><p>regularization term</p>
 </dd>
 </dl>
 </dd>
@@ -485,7 +485,7 @@ matrix, as done in <a class="reference internal" href="#r754ada52d1e1-1" id="id2
 <dd class="field-even"><dl class="simple">
 <dt>v_j: np.ndarray [shape=(nb_frames, nb_bins)]</dt><dd><p>power spectral density of the source</p>
 </dd>
-<dt><strong>R_J</strong><span class="classifier">np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>Spatial covariance matrix of the source</p>
+<dt>R_J: np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</dt><dd><p>Spatial covariance matrix of the source</p>
 </dd>
 </dl>
 </dd>
@@ -521,9 +521,9 @@ input model from the mixture spectrogram, with flooring to 0.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]</span></dt><dd><p>Estimated spectrograms for the sources</p>
+<dt><strong>v: np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]</strong></dt><dd><p>Estimated spectrograms for the sources</p>
 </dd>
-<dt><strong>x</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span></dt><dd><p>complex mixture</p>
+<dt><strong>x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>complex mixture</p>
 </dd>
 <dt><strong>alpha: float [scalar]</strong></dt><dd><p>exponent for the spectrograms <cite>v</cite>. For instance, if <cite>alpha==1</cite>,
 then <cite>v</cite> must be homogoneous to magnitudes, and if <cite>alpha==2</cite>, <cite>v</cite>
@@ -533,7 +533,7 @@ must homogeneous to squared magnitudes.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]</span></dt><dd><p>Spectrograms of the sources, with an appended one for the residual.</p>
+<dt>v: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]</dt><dd><p>Spectrograms of the sources, with an appended one for the residual.</p>
 </dd>
 </dl>
 </dd>
@@ -547,18 +547,18 @@ must homogeneous to squared magnitudes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(nb_frames, …)]</span></dt><dd><p>input array</p>
+<dt><strong>v: np.ndarray [shape=(nb_frames, …)]</strong></dt><dd><p>input array</p>
 </dd>
-<dt><strong>sigma</strong><span class="classifier">int [scalar]</span></dt><dd><p>lengthscale of the gaussian blur</p>
+<dt><strong>sigma: int [scalar]</strong></dt><dd><p>lengthscale of the gaussian blur</p>
 </dd>
-<dt><strong>temporal</strong><span class="classifier">boolean</span></dt><dd><p>if True, will smooth only along time through 1d blur. Will use a
+<dt><strong>temporal: boolean</strong></dt><dd><p>if True, will smooth only along time through 1d blur. Will use a
 multidimensional Gaussian blur otherwise.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>result</strong><span class="classifier">np.ndarray [shape=(nb_frames, …)]</span></dt><dd><p>filtered array</p>
+<dt>result: np.ndarray [shape=(nb_frames, …)]</dt><dd><p>filtered array</p>
 </dd>
 </dl>
 </dd>
@@ -579,15 +579,15 @@ unlikely that they are all energetic at the same time-frequency bins.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>v</strong><span class="classifier">np.ndarray [shape=(…, nb_sources)]</span></dt><dd><blockquote>
+<dt><strong>v: np.ndarray [shape=(…, nb_sources)]</strong></dt><dd><blockquote>
 <div><p>non-negative data on which to apply interference reduction</p>
 </div></blockquote>
 <dl class="simple">
-<dt>thresh<span class="classifier">float [scalar]</span></dt><dd><p>threshold for the compression, should be between 0 and 1. The closer
+<dt>thresh: float [scalar]</dt><dd><p>threshold for the compression, should be between 0 and 1. The closer
 to 1, the more reduction of the interferences, at the price of more
 distortion.</p>
 </dd>
-<dt>slope<span class="classifier">float [scalar]</span></dt><dd><p>the slope at which binarization is done. The higher, the more
+<dt>slope: float [scalar]</dt><dd><p>the slope at which binarization is done. The higher, the more
 brutal</p>
 </dd>
 </dl>
@@ -596,7 +596,7 @@ brutal</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>v</strong><span class="classifier">np.ndarray [same shape as input]</span></dt><dd><p><cite>v</cite> with reduced interferences</p>
+<dt>v: np.ndarray [same shape as input]</dt><dd><p><cite>v</cite> with reduced interferences</p>
 </dd>
 </dl>
 </dd>
@@ -623,18 +623,18 @@ single-channel mask. Then, compression is applied on the mask only.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>W</strong><span class="classifier">ndarray, shape=(…, nb_channels, nb_channels)</span></dt><dd><p>filter on which to apply logit compression.</p>
+<dt><strong>W: ndarray, shape=(…, nb_channels, nb_channels)</strong></dt><dd><p>filter on which to apply logit compression.</p>
 </dd>
-<dt><strong>thresh</strong><span class="classifier">float</span></dt><dd><p>threshold for the compression, should be between 0 and 1. The closer
+<dt><strong>thresh: float</strong></dt><dd><p>threshold for the compression, should be between 0 and 1. The closer
 to 1, the less interferences, but the more distortion.</p>
 </dd>
-<dt><strong>slope</strong><span class="classifier">float</span></dt><dd><p>the slope at which binarization is done. The higher, the more brutal</p>
+<dt><strong>slope: float</strong></dt><dd><p>the slope at which binarization is done. The higher, the more brutal</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>W</strong><span class="classifier">np.ndarray [same shape as input]</span></dt><dd><p>Compressed filter</p>
+<dt>W: np.ndarray [same shape as input]</dt><dd><p>Compressed filter</p>
 </dd>
 </dl>
 </dd>

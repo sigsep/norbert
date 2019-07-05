@@ -195,10 +195,10 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
+<span class="sd">    y: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
 <span class="sd">        initial estimates for the sources</span>
 
-<span class="sd">    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">    x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        complex STFT of the mixture signal</span>
 
 <span class="sd">    iterations: int [scalar]</span>
@@ -207,19 +207,19 @@
 <span class="sd">    verbose: boolean</span>
 <span class="sd">        display some information if True</span>
 
-<span class="sd">    eps : float or None [scalar]</span>
+<span class="sd">    eps: float or None [scalar]</span>
 <span class="sd">        The epsilon value to use for regularization and filters.</span>
 <span class="sd">        If None,  the default will use the epsilon of np.real(x) dtype.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
+<span class="sd">    y: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
 <span class="sd">        estimated sources after iterations</span>
 
-<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span>
+<span class="sd">    v: np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span>
 <span class="sd">        estimated power spectral densities</span>
 
-<span class="sd">    R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span>
+<span class="sd">    R: np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span>
 <span class="sd">        estimated spatial covariance matrices</span>
 
 
@@ -334,13 +334,13 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 
-<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]</span>
+<span class="sd">    v: np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]</span>
 <span class="sd">        spectrograms of the sources. This is a nonnegative tensor that is</span>
 <span class="sd">        usually the output of the actual separation method of the user. The</span>
 <span class="sd">        spectrograms may be mono, but they need to be 4-dimensional in all</span>
 <span class="sd">        cases.</span>
 
-<span class="sd">    x : np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">    x: np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        STFT of the mixture signal.</span>
 
 <span class="sd">    iterations : int [scalar]</span>
@@ -364,7 +364,7 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 
-<span class="sd">    y : np.ndarray</span>
+<span class="sd">    y: np.ndarray</span>
 <span class="sd">            [complex, shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
 <span class="sd">        STFT of estimated sources</span>
 
@@ -427,10 +427,10 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
+<span class="sd">    v: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]</span>
 <span class="sd">        spectrograms of the sources</span>
 
-<span class="sd">    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">    x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        mixture signal</span>
 
 <span class="sd">    logit: {None, float between 0 and 1}</span>
@@ -463,10 +463,10 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    M : np.ndarray [shape=(..., nb_channels, nb_channels)]</span>
+<span class="sd">    M: np.ndarray [shape=(..., nb_channels, nb_channels)]</span>
 <span class="sd">        matrices to invert: must be square along the last two dimensions</span>
 
-<span class="sd">    eps : [scalar]</span>
+<span class="sd">    eps: [scalar]</span>
 <span class="sd">        regularization parameter to use _only in the case of matrices</span>
 <span class="sd">        bigger than 2x2</span>
 
@@ -512,13 +512,13 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">    v_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        power spectral density of the target source.</span>
 
-<span class="sd">    R_j : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">    R_j: np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        spatial covariance matrix of the target source</span>
 
-<span class="sd">    inv_Cxx : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">    inv_Cxx: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        inverse of the mixture covariance matrices</span>
 
 <span class="sd">    Returns</span>
@@ -546,15 +546,15 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">    x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        STFT of the signal on which to apply the filter.</span>
 
-<span class="sd">    W : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">    W: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        filtering matrices, as returned, e.g. by :func:`wiener_gain`</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    y_hat : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">    y_hat: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">        filtered signal</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nb_channels</span> <span class="o">=</span> <span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -573,15 +573,15 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    v : np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span>
+<span class="sd">    v: np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]</span>
 <span class="sd">        Power spectral densities for the sources</span>
 
-<span class="sd">    R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span>
+<span class="sd">    R: np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]</span>
 <span class="sd">        Spatial covariance matrices of each sources</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    Cxx : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">    Cxx: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        Covariance matrix for the mixture</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nb_channels</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -598,12 +598,12 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    y_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)].</span>
+<span class="sd">    y_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)].</span>
 <span class="sd">          complex stft of the source.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    Cj : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">    Cj: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        just y_j * conj(y_j.T): empirical covariance for each TF bin.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="p">(</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">)</span> <span class="o">=</span> <span class="n">y_j</span><span class="o">.</span><span class="n">shape</span>
@@ -634,16 +634,16 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    y_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
+<span class="sd">    y_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]</span>
 <span class="sd">          complex stft of the source.</span>
-<span class="sd">    eps : float [scalar]</span>
+<span class="sd">    eps: float [scalar]</span>
 <span class="sd">        regularization term</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    v_j: np.ndarray [shape=(nb_frames, nb_bins)]</span>
 <span class="sd">        power spectral density of the source</span>
-<span class="sd">    R_J : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span>
+<span class="sd">    R_J: np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        Spatial covariance matrix of the source</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
