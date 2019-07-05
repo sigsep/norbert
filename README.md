@@ -24,6 +24,10 @@ From a more expert perspective, you will find the different ingredients from the
 
 ...
 
+## Authors
+
+Antoine Liutkus, Fabian-Robert Stöter
+
 ## License
 
 MIT

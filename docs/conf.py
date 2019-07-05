@@ -15,8 +15,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'Norbert'
-copyright = '2019, Inria (Fabian-Robert Stöter, Antoine Liutkus)'
-author = 'Fabian-Robert Stöter, Antoine Liutkus'
+copyright = '2019, Inria (Antoine Liutkus, Fabian-Robert Stöter)'
+author = 'Antoine Liutkus, Fabian-Robert Stöter'
 
 # The short X.Y version
 version = ''
@@ -35,7 +35,6 @@ release = ''
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
@@ -106,6 +105,18 @@ html_sidebars = {'**': ['globaltoc.html',
 #
 # html_sidebars = {}
 
+html_theme_options = {
+    'logo_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    # Toc options
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False
+}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
