@@ -160,8 +160,8 @@
 <span class="sd">    weighted refinement proposed in [3]_, [4]_.</span>
 <span class="sd">    It works by iteratively:</span>
 
-<span class="sd">     * Re-estimate source parameters (PSD and spatial covariance matrix)</span>
-<span class="sd">       through :func:`get_local_gaussian_model`.</span>
+<span class="sd">     * Re-estimate source parameters (power spectral densities and spatial</span>
+<span class="sd">       covariance matrices) through :func:`get_local_gaussian_model`.</span>
 
 <span class="sd">     * Separate again the mixture with the new parameters by first computing</span>
 <span class="sd">       the new modelled mixture covariance matrices with :func:`get_mix_model`,</span>
@@ -230,13 +230,13 @@
 
 <span class="sd">        * This algorithm *is not* an implementation of the &quot;exact&quot; EM</span>
 <span class="sd">          proposed in [1]_. In particular, it does compute the posterior</span>
-<span class="sd">          covariance matrices the same way. Instead, it uses the simplified</span>
-<span class="sd">          scheme initially proposed in [5]_ and further refined in [3]_, [4]_,</span>
-<span class="sd">          that boils down to just take the empirical covariance of the recent</span>
-<span class="sd">          source estimates, followed by a weighted average for the update</span>
-<span class="sd">          of the spatial covariance matrix. It has been empirically</span>
-<span class="sd">          demonstrated that this simplified algorithm is more robust for</span>
-<span class="sd">          music separation.</span>
+<span class="sd">          covariance matrices the same (exact) way. Instead, it uses the</span>
+<span class="sd">          simplified approximate scheme initially proposed in [5]_ and further</span>
+<span class="sd">          refined in [3]_, [4]_, that boils down to just take the empirical</span>
+<span class="sd">          covariance of the recent source estimates, followed by a weighted</span>
+<span class="sd">          average for the update of the spatial covariance matrix. It has been</span>
+<span class="sd">          empirically demonstrated that this simplified algorithm is more</span>
+<span class="sd">          robust for music separation.</span>
 
 <span class="sd">    Warning</span>
 <span class="sd">    -------</span>
@@ -252,7 +252,6 @@
 <span class="sd">        This is notably needed if you let common deep learning frameworks like</span>
 <span class="sd">        PyTorch or TensorFlow do the STFT, because this usually happens in</span>
 <span class="sd">        single precision.</span>
-
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># to avoid dividing by zero</span>
@@ -284,13 +283,13 @@
                 <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
                 <span class="n">eps</span><span class="p">)</span>
 
-        <span class="n">Cxx</span> <span class="o">=</span> <span class="n">_get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">)</span>
+        <span class="n">Cxx</span> <span class="o">=</span> <span class="n">get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">)</span>
         <span class="n">Cxx</span> <span class="o">+=</span> <span class="n">regularization</span>
         <span class="n">inv_Cxx</span> <span class="o">=</span> <span class="n">_invert</span><span class="p">(</span><span class="n">Cxx</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
         <span class="c1"># separate the sources</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_sources</span><span class="p">):</span>
-            <span class="n">W_j</span> <span class="o">=</span> <span class="n">_wiener_gain</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">inv_Cxx</span><span class="p">)</span>
-            <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">_apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W_j</span><span class="p">)</span>
+            <span class="n">W_j</span> <span class="o">=</span> <span class="n">wiener_gain</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">inv_Cxx</span><span class="p">)</span>
+            <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W_j</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">R</span></div>
 
@@ -349,9 +348,10 @@
 
 <span class="sd">    use_softmask : boolean</span>
 <span class="sd">        * if `False`, then the mixture phase will directly be used with the</span>
-<span class="sd">        spectrogram as initial estimates. :warning:coincoin</span>
+<span class="sd">          spectrogram as initial estimates.</span>
+
 <span class="sd">        * if `True`, a softmasking strategy will be used as described in</span>
-<span class="sd">        :func:`softmask`.</span>
+<span class="sd">          :func:`softmask`.</span>
 
 <span class="sd">    eps : {None, float}</span>
 <span class="sd">        Epsilon value to use for computing the separations. This is used</span>
@@ -371,11 +371,11 @@
 <span class="sd">    Note</span>
 <span class="sd">    ----</span>
 
-<span class="sd">    * Be careful that you need * magnitude spectrogram estimates* for the</span>
+<span class="sd">    * Be careful that you need *magnitude spectrogram estimates* for the</span>
 <span class="sd">      case `softmask==False`.</span>
 <span class="sd">    * We recommand to use `softmask=False` only if your spectrogram model is</span>
 <span class="sd">      pretty good, e.g. when the output of a deep neural net. In the case</span>
-<span class="sd">      it is not so great, opt for an initial softmaskin strategy.</span>
+<span class="sd">      it is not so great, opt for an initial softmasking strategy.</span>
 <span class="sd">    * The epsilon value will have a huge impact on performance. If it&#39;s large,</span>
 <span class="sd">      only the parts of the signal with a significant energy will be kept in</span>
 <span class="sd">      the sources. This epsilon then directly controls the energy of the</span>
@@ -497,7 +497,7 @@
     <span class="k">return</span> <span class="n">invM</span>
 
 
-<span class="k">def</span> <span class="nf">_wiener_gain</span><span class="p">(</span><span class="n">v_j</span><span class="p">,</span> <span class="n">R_j</span><span class="p">,</span> <span class="n">inv_Cxx</span><span class="p">):</span>
+<div class="viewcode-block" id="wiener_gain"><a class="viewcode-back" href="../index.html#norbert.wiener_gain">[docs]</a><span class="k">def</span> <span class="nf">wiener_gain</span><span class="p">(</span><span class="n">v_j</span><span class="p">,</span> <span class="n">R_j</span><span class="p">,</span> <span class="n">inv_Cxx</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the wiener gain for separating one source, given all parameters.</span>
 <span class="sd">    It is the matrix applied to the mix to get the posterior mean of the source</span>
@@ -525,8 +525,8 @@
 <span class="sd">    -------</span>
 
 <span class="sd">    G : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
-<span class="sd">        wiener filtering matrices, to apply to the mix at each time-frequency</span>
-<span class="sd">        bin to get the target source estimate.</span>
+<span class="sd">        wiener filtering matrices, to apply to the mix, e.g. through</span>
+<span class="sd">        :func:`apply_filter` to get the target source estimate.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">)</span> <span class="o">=</span> <span class="n">R_j</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
@@ -536,10 +536,10 @@
     <span class="k">for</span> <span class="p">(</span><span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">,</span> <span class="n">i3</span><span class="p">)</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nb_channels</span><span class="p">),)</span><span class="o">*</span><span class="mi">3</span><span class="p">):</span>
         <span class="n">G</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">R_j</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="n">i1</span><span class="p">,</span> <span class="n">i3</span><span class="p">]</span> <span class="o">*</span> <span class="n">inv_Cxx</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i3</span><span class="p">,</span> <span class="n">i2</span><span class="p">])</span>
     <span class="n">G</span> <span class="o">*=</span> <span class="n">v_j</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">G</span>
+    <span class="k">return</span> <span class="n">G</span></div>
 
 
-<span class="k">def</span> <span class="nf">_apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W</span><span class="p">):</span>
+<div class="viewcode-block" id="apply_filter"><a class="viewcode-back" href="../index.html#norbert.apply_filter">[docs]</a><span class="k">def</span> <span class="nf">apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Applies a filter on the mixture. Just corresponds to a matrix</span>
 <span class="sd">    multiplication.</span>
@@ -550,7 +550,7 @@
 <span class="sd">        STFT of the signal on which to apply the filter.</span>
 
 <span class="sd">    W : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span>
-<span class="sd">        filtering matrices, as returned, e.g. by `_wiener_gain`</span>
+<span class="sd">        filtering matrices, as returned, e.g. by :func:`wiener_gain`</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -563,10 +563,10 @@
     <span class="n">y_hat</span> <span class="o">=</span> <span class="mi">0</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_channels</span><span class="p">):</span>
         <span class="n">y_hat</span> <span class="o">+=</span> <span class="n">W</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">y_hat</span>
+    <span class="k">return</span> <span class="n">y_hat</span></div>
 
 
-<span class="k">def</span> <span class="nf">_get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">):</span>
+<div class="viewcode-block" id="get_mix_model"><a class="viewcode-back" href="../index.html#norbert.get_mix_model">[docs]</a><span class="k">def</span> <span class="nf">get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the model covariance of a mixture based on local Gaussian models.</span>
 <span class="sd">    simply adds up all the v[..., j] * R[..., j]</span>
@@ -589,7 +589,7 @@
     <span class="n">Cxx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">,</span> <span class="n">nb_channels</span><span class="p">),</span> <span class="n">R</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_sources</span><span class="p">):</span>
         <span class="n">Cxx</span> <span class="o">+=</span> <span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">R</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">Cxx</span>
+    <span class="k">return</span> <span class="n">Cxx</span></div>
 
 
 <span class="k">def</span> <span class="nf">_covariance</span><span class="p">(</span><span class="n">y_j</span><span class="p">):</span>
@@ -618,8 +618,8 @@
 <div class="viewcode-block" id="get_local_gaussian_model"><a class="viewcode-back" href="../index.html#norbert.get_local_gaussian_model">[docs]</a><span class="k">def</span> <span class="nf">get_local_gaussian_model</span><span class="p">(</span><span class="n">y_j</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the local Gaussian model [1]_ for a source given the complex STFT.</span>
-<span class="sd">    First get the PSD, and then the spatial covariance matrix, as done in</span>
-<span class="sd">    [1]_, [2]_</span>
+<span class="sd">    First get the power spectral densities, and then the spatial covariance</span>
+<span class="sd">    matrix, as done in [1]_, [2]_</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -642,7 +642,7 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    v_j: np.ndarray [shape=(nb_frames, nb_bins)]</span>
-<span class="sd">        PSD of the source</span>
+<span class="sd">        power spectral density of the source</span>
 <span class="sd">    R_J : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]</span>
 <span class="sd">        Spatial covariance matrix of the source</span>
 
@@ -679,7 +679,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2019, Fabian-Robert Stöter, Antoine Liutkus
+        &copy; Copyright 2019, Inria (Fabian-Robert Stöter, Antoine Liutkus)
 
     </p>
   </div>

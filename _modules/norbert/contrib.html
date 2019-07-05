@@ -153,13 +153,12 @@
 
 
 <div class="viewcode-block" id="residual_model"><a class="viewcode-back" href="../../index.html#norbert.contrib.residual_model">[docs]</a><span class="k">def</span> <span class="nf">residual_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute a model for the residual based on spectral subtraction.</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute a model for the residual based on spectral subtraction.</span>
 
 <span class="sd">    The method consists in two steps:</span>
 
 <span class="sd">    * The provided spectrograms are summed up to obtain the *input* model for</span>
-<span class="sd">      the mixture. This *input* model is scaled frequency-wide to best</span>
+<span class="sd">      the mixture. This *input* model is scaled frequency-wise to best</span>
 <span class="sd">      fit with the actual observed mixture spectrogram.</span>
 
 <span class="sd">    * The residual model is obtained through spectral subtraction of the</span>
@@ -175,8 +174,8 @@
 
 <span class="sd">    alpha: float [scalar]</span>
 <span class="sd">        exponent for the spectrograms `v`. For instance, if `alpha==1`,</span>
-<span class="sd">        then `v` is homogoneous to magnitudes, and if `alpha==2`, `v`</span>
-<span class="sd">        is homogeneous to squared magnitudes.</span>
+<span class="sd">        then `v` must be homogoneous to magnitudes, and if `alpha==2`, `v`</span>
+<span class="sd">        must homogeneous to squared magnitudes.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -188,6 +187,10 @@
 <span class="sd">    It is not mandatory to input multichannel spectrograms. However, the</span>
 <span class="sd">    output spectrograms *will* be multichannel.</span>
 
+<span class="sd">    Warning</span>
+<span class="sd">    -------</span>
+<span class="sd">    You must be careful to set `alpha` as the exponent that corresponds to `v`.</span>
+<span class="sd">    In other words, *you must have*: ``np.abs(x)**alpha`` homogeneous to `v`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># to avoid dividing by zero</span>
     <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span>
@@ -293,7 +296,7 @@
     <span class="k">return</span> <span class="n">v</span></div>
 
 
-<div class="viewcode-block" id="compress_filter"><a class="viewcode-back" href="../../index.html#norbert.contrib.compress_filter">[docs]</a><span class="k">def</span> <span class="nf">compress_filter</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">slope</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">multichannel</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="compress_filter"><a class="viewcode-back" href="../../index.html#norbert.contrib.compress_filter">[docs]</a><span class="k">def</span> <span class="nf">compress_filter</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">slope</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;Applies a logit compression to a filter. This enables to &quot;binarize&quot; a</span>
 <span class="sd">    separation filter. This allows to reduce interferences at the price</span>
 <span class="sd">    of distortion.</span>
@@ -340,7 +343,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2019, Fabian-Robert Stöter, Antoine Liutkus
+        &copy; Copyright 2019, Inria (Fabian-Robert Stöter, Antoine Liutkus)
 
     </p>
   </div>
