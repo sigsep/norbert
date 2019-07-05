@@ -52,10 +52,10 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
 
     Parameters
     ----------
-    y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
+    y: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
         initial estimates for the sources
 
-    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
+    x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         complex STFT of the mixture signal
 
     iterations: int [scalar]
@@ -64,19 +64,19 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
     verbose: boolean
         display some information if True
 
-    eps : float or None [scalar]
+    eps: float or None [scalar]
         The epsilon value to use for regularization and filters.
         If None,  the default will use the epsilon of np.real(x) dtype.
 
     Returns
     -------
-    y : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
+    y: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
         estimated sources after iterations
 
-    v : np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]
+    v: np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]
         estimated power spectral densities
 
-    R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]
+    R: np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]
         estimated spatial covariance matrices
 
 
@@ -191,13 +191,13 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     Parameters
     ----------
 
-    v : np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]
+    v: np.ndarray [shape=(nb_frames, nb_bins, {1,nb_channels}, nb_sources)]
         spectrograms of the sources. This is a nonnegative tensor that is
         usually the output of the actual separation method of the user. The
         spectrograms may be mono, but they need to be 4-dimensional in all
         cases.
 
-    x : np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]
+    x: np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]
         STFT of the mixture signal.
 
     iterations : int [scalar]
@@ -221,7 +221,7 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     Returns
     -------
 
-    y : np.ndarray
+    y: np.ndarray
             [complex, shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
         STFT of estimated sources
 
@@ -284,10 +284,10 @@ def softmask(v, x, logit=None, eps=None):
 
     Parameters
     ----------
-    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
+    v: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources)]
         spectrograms of the sources
 
-    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
+    x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         mixture signal
 
     logit: {None, float between 0 and 1}
@@ -320,10 +320,10 @@ def _invert(M, eps):
 
     Parameters
     ----------
-    M : np.ndarray [shape=(..., nb_channels, nb_channels)]
+    M: np.ndarray [shape=(..., nb_channels, nb_channels)]
         matrices to invert: must be square along the last two dimensions
 
-    eps : [scalar]
+    eps: [scalar]
         regularization parameter to use _only in the case of matrices
         bigger than 2x2
 
@@ -369,13 +369,13 @@ def wiener_gain(v_j, R_j, inv_Cxx):
 
     Parameters
     ----------
-    v_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
+    v_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         power spectral density of the target source.
 
-    R_j : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]
+    R_j: np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]
         spatial covariance matrix of the target source
 
-    inv_Cxx : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
+    inv_Cxx: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
         inverse of the mixture covariance matrices
 
     Returns
@@ -403,15 +403,15 @@ def apply_filter(x, W):
 
     Parameters
     ----------
-    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
+    x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         STFT of the signal on which to apply the filter.
 
-    W : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
+    W: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
         filtering matrices, as returned, e.g. by :func:`wiener_gain`
 
     Returns
     -------
-    y_hat : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
+    y_hat: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         filtered signal
     """
     nb_channels = W.shape[-1]
@@ -430,15 +430,15 @@ def get_mix_model(v, R):
 
     Parameters
     ----------
-    v : np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]
+    v: np.ndarray [shape=(nb_frames, nb_bins, nb_sources)]
         Power spectral densities for the sources
 
-    R : np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]
+    R: np.ndarray [shape=(nb_bins, nb_channels, nb_channels, nb_sources)]
         Spatial covariance matrices of each sources
 
     Returns
     -------
-    Cxx : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
+    Cxx: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
         Covariance matrix for the mixture
     """
     nb_channels = R.shape[1]
@@ -455,12 +455,12 @@ def _covariance(y_j):
 
     Parameters
     ----------
-    y_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)].
+    y_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)].
           complex stft of the source.
 
     Returns
     -------
-    Cj : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
+    Cj: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]
         just y_j * conj(y_j.T): empirical covariance for each TF bin.
     """
     (nb_frames, nb_bins, nb_channels) = y_j.shape
@@ -491,16 +491,16 @@ def get_local_gaussian_model(y_j, eps=1.):
 
     Parameters
     ----------
-    y_j : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
+    y_j: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
           complex stft of the source.
-    eps : float [scalar]
+    eps: float [scalar]
         regularization term
 
     Returns
     -------
     v_j: np.ndarray [shape=(nb_frames, nb_bins)]
         power spectral density of the source
-    R_J : np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]
+    R_J: np.ndarray [shape=(nb_bins, nb_channels, nb_channels)]
         Spatial covariance matrix of the source
 
     """

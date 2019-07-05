@@ -21,10 +21,10 @@ def residual_model(v, x, alpha=1):
 
     Parameters
     ----------
-    v : np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]
+    v: np.ndarray [shape=(nb_frames, nb_bins, {1, nb_channels}, nb_sources)]
         Estimated spectrograms for the sources
 
-    x : np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
+    x: np.ndarray [shape=(nb_frames, nb_bins, nb_channels)]
         complex mixture
 
     alpha: float [scalar]
@@ -34,7 +34,7 @@ def residual_model(v, x, alpha=1):
 
     Returns
     -------
-    v : np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]
+    v: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_sources+1)]
         Spectrograms of the sources, with an appended one for the residual.
 
     Note
@@ -84,19 +84,19 @@ def smooth(v, width=1, temporal=False):
 
     Parameters
     ----------
-    v : np.ndarray [shape=(nb_frames, ...)]
+    v: np.ndarray [shape=(nb_frames, ...)]
         input array
 
-    sigma : int [scalar]
+    sigma: int [scalar]
         lengthscale of the gaussian blur
 
-    temporal : boolean
+    temporal: boolean
         if True, will smooth only along time through 1d blur. Will use a
         multidimensional Gaussian blur otherwise.
 
     Returns
     -------
-    result : np.ndarray [shape=(nb_frames, ...)]
+    result: np.ndarray [shape=(nb_frames, ...)]
         filtered array
 
     """
@@ -126,21 +126,21 @@ def reduce_interferences(v, thresh=0.6, slope=15):
 
     Parameters
     ----------
-    v : np.ndarray [shape=(..., nb_sources)]
+    v: np.ndarray [shape=(..., nb_sources)]
         non-negative data on which to apply interference reduction
 
-    thresh : float [scalar]
+    thresh: float [scalar]
         threshold for the compression, should be between 0 and 1. The closer
         to 1, the more reduction of the interferences, at the price of more
         distortion.
 
-    slope : float [scalar]
+    slope: float [scalar]
             the slope at which binarization is done. The higher, the more
             brutal
 
     Returns
     -------
-    v : np.ndarray [same shape as input]
+    v: np.ndarray [same shape as input]
         `v` with reduced interferences
 
     """
@@ -162,19 +162,19 @@ def compress_filter(W, thresh=0.6, slope=15):
 
     Parameters
     ----------
-    W : ndarray, shape=(..., nb_channels, nb_channels)
+    W: ndarray, shape=(..., nb_channels, nb_channels)
         filter on which to apply logit compression.
 
-    thresh : float
+    thresh: float
         threshold for the compression, should be between 0 and 1. The closer
         to 1, the less interferences, but the more distortion.
 
-    slope : float
+    slope: float
         the slope at which binarization is done. The higher, the more brutal
 
     Returns
     -------
-    W : np.ndarray [same shape as input]
+    W: np.ndarray [same shape as input]
         Compressed filter
     '''
 
