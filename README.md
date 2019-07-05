@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.com/sigsep/norbert.svg?branch=master)](https://travis-ci.com/sigsep/norbert)
 [![Latest Version](https://img.shields.io/pypi/v/norbert.svg)](https://pypi.python.org/pypi/norbert)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/norbert.svg)](https://pypi.python.org/pypi/norbert)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3269749.svg)](https://doi.org/10.5281/zenodo.3269749)
 
 <img align="left" src="https://user-images.githubusercontent.com/72940/45908695-15ce8900-bdfe-11e8-8420-78ad9bb32f84.jpg">
 
@@ -27,6 +28,12 @@ From a more expert perspective, you will find the different ingredients from the
 ## Authors
 
 Antoine Liutkus, Fabian-Robert Stöter
+
+## Citation
+
+If you want to cite the _Norbert_ software package, please use the DOI from Zenodo:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3269749.svg)](https://doi.org/10.5281/zenodo.3269749)
 
 ## License
 
