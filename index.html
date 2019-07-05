@@ -283,16 +283,16 @@ cases.</p>
 </dd>
 <dt><strong>x: np.ndarray [complex, shape=(nb_frames, nb_bins, nb_channels)]</strong></dt><dd><p>STFT of the mixture signal.</p>
 </dd>
-<dt><strong>iterations</strong><span class="classifier">int [scalar]</span></dt><dd><p>number of iterations for the EM algorithm</p>
+<dt><strong>iterations: int [scalar]</strong></dt><dd><p>number of iterations for the EM algorithm</p>
 </dd>
-<dt><strong>use_softmask</strong><span class="classifier">boolean</span></dt><dd><ul class="simple">
+<dt><strong>use_softmask: boolean</strong></dt><dd><ul class="simple">
 <li><p>if <cite>False</cite>, then the mixture phase will directly be used with the
 spectrogram as initial estimates.</p></li>
 <li><p>if <cite>True</cite>, a softmasking strategy will be used as described in
 <a class="reference internal" href="#norbert.softmask" title="norbert.softmask"><code class="xref py py-func docutils literal notranslate"><span class="pre">softmask()</span></code></a>.</p></li>
 </ul>
 </dd>
-<dt><strong>eps</strong><span class="classifier">{None, float}</span></dt><dd><p>Epsilon value to use for computing the separations. This is used
+<dt><strong>eps: {None, float}</strong></dt><dd><p>Epsilon value to use for computing the separations. This is used
 whenever division with a model energy is performed, i.e. when
 softmasking and when iterating the EM.
 It can be understood as the energy of the additional white noise
@@ -403,7 +403,7 @@ as in <a class="reference internal" href="#r2526576d5897-1" id="id22">[1]</a></p
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>G</strong><span class="classifier">np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</span></dt><dd><p>wiener filtering matrices, to apply to the mix, e.g. through
+<dt>G: np.ndarray [shape=(nb_frames, nb_bins, nb_channels, nb_channels)]</dt><dd><p>wiener filtering matrices, to apply to the mix, e.g. through
 <a class="reference internal" href="#norbert.apply_filter" title="norbert.apply_filter"><code class="xref py py-func docutils literal notranslate"><span class="pre">apply_filter()</span></code></a> to get the target source estimate.</p>
 </dd>
 </dl>
