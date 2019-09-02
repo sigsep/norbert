@@ -23,7 +23,18 @@ From a more expert perspective, you will find the different ingredients from the
 
 ## Usage
 
-...
+Asssuming a complex spectrogram `X`, and a (magnitude) estimate of a target to be extracted from the spectrogram, performing the multichannel wiener filter is as simple as this:
+
+```python
+X = stft(audio)
+V = model(X)
+Y = norbert.wiener(V, X)
+estimate = istft(Y)
+```
+
+## How to contribute
+
+_norbert_ is a community focused project, we therefore encourage the community to submit bug-fixes and requests for technical support through [github issues](https://github.com/sigsep/norbert/issues/new). For more details of how to contribute, please follow our [`CONTRIBUTING.md`](CONTRIBUTING.md). 
 
 ## Authors
 
