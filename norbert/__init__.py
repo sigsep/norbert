@@ -128,23 +128,19 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
     regularization = np.sqrt(eps) * (
             np.tile(np.eye(nb_channels, dtype=np.complex64),
                     (1, nb_bins, 1, 1)))
-    from tqdm import trange
-    for it in trange(iterations):
+    for it in range(iterations):
         # constructing the mixture covariance matrix. Doing it with a loop
         # to avoid storing anytime in RAM the whole 6D tensor
         if verbose:
             print('EM, iteration %d' % (it+1))
 
-        print('getting local gaussian models')
         for j in range(nb_sources):
             # update the spectrogram model for source j
             v[..., j], R[..., j] = get_local_gaussian_model(
                 y[..., j],
                 eps)
 
-        nb_frames = x.shape[0]
-        print('now doing separation')
-        for t in trange(nb_frames):
+        for t in range(nb_frames):
             Cxx = get_mix_model(v[None, t, ...], R)
             Cxx += regularization
             inv_Cxx = _invert(Cxx, eps)
