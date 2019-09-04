@@ -136,7 +136,7 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
             print('EM, iteration %d' % (it+1))
 
         print('getting local gaussian models')
-        for j in trange(nb_sources):
+        for j in range(nb_sources):
             # update the spectrogram model for source j
             v[..., j], R[..., j] = get_local_gaussian_model(
                 y[..., j],
@@ -149,7 +149,7 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
             Cxx += regularization
             inv_Cxx = _invert(Cxx, eps)
             # separate the sources
-            for j in trange(nb_sources):
+            for j in range(nb_sources):
                 W_j = wiener_gain(v[None, t, ..., j], R[..., j], inv_Cxx)
                 y[t, ..., j] = apply_filter(x[None, t, ...], W_j)[0]
 
