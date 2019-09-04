@@ -508,12 +508,7 @@ def get_local_gaussian_model(y_j, eps=1.):
 
     v_j = np.mean(np.abs(y_j)**2, axis=2)
 
-    # compute the covariance of the source
-    #C_j = _covariance(y_j)
-
     # updates the spatial covariance matrix
-    # this is where there is a potential overflow problem for very long
-    # files, but we ignore this potential issue and let it to the user.
     nb_frames = y_j.shape[0]
     R_j = 0
     weight = eps
@@ -521,14 +516,4 @@ def get_local_gaussian_model(y_j, eps=1.):
         R_j += _covariance(y_j[None, t, ...])
         weight += v_j[None, t, ...]
     R_j /= weight[..., None, None]
-    # try:
-    #     R_j = (
-    #         np.sum(C_j, axis=0) /
-    #         (eps+np.sum(v_j[..., None, None], axis=0))
-    #     )
-    # except Exception:
-    #     raise Exception(
-    #           'There was a problem when computing the spatial covariance '
-    #           'matrix. Your mixture is probably too long for this '
-    #           'implementation')
     return v_j, R_j
