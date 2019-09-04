@@ -270,7 +270,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of iterations: &#39;</span><span class="p">,</span> <span class="n">iterations</span><span class="p">)</span>
     <span class="n">regularization</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
             <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">nb_channels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex64</span><span class="p">),</span>
-                    <span class="p">(</span><span class="n">nb_frames</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+                    <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nb_bins</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
     <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
         <span class="c1"># constructing the mixture covariance matrix. Doing it with a loop</span>
         <span class="c1"># to avoid storing anytime in RAM the whole 6D tensor</span>
@@ -283,13 +283,14 @@
                 <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
                 <span class="n">eps</span><span class="p">)</span>
 
-        <span class="n">Cxx</span> <span class="o">=</span> <span class="n">get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">R</span><span class="p">)</span>
-        <span class="n">Cxx</span> <span class="o">+=</span> <span class="n">regularization</span>
-        <span class="n">inv_Cxx</span> <span class="o">=</span> <span class="n">_invert</span><span class="p">(</span><span class="n">Cxx</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
-        <span class="c1"># separate the sources</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_sources</span><span class="p">):</span>
-            <span class="n">W_j</span> <span class="o">=</span> <span class="n">wiener_gain</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">inv_Cxx</span><span class="p">)</span>
-            <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W_j</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_frames</span><span class="p">):</span>
+            <span class="n">Cxx</span> <span class="o">=</span> <span class="n">get_mix_model</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">R</span><span class="p">)</span>
+            <span class="n">Cxx</span> <span class="o">+=</span> <span class="n">regularization</span>
+            <span class="n">inv_Cxx</span> <span class="o">=</span> <span class="n">_invert</span><span class="p">(</span><span class="n">Cxx</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+            <span class="c1"># separate the sources</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_sources</span><span class="p">):</span>
+                <span class="n">W_j</span> <span class="o">=</span> <span class="n">wiener_gain</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">R</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">inv_Cxx</span><span class="p">)</span>
+                <span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">apply_filter</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">W_j</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">R</span></div>
 
@@ -399,8 +400,8 @@
     <span class="c1"># we need to refine the estimates. Scales down the estimates for</span>
     <span class="c1"># numerical stability</span>
     <span class="n">max_abs</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">10.</span><span class="p">)</span>
-    <span class="n">x_scaled</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="n">max_abs</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">expectation_maximization</span><span class="p">(</span><span class="n">y</span><span class="o">/</span><span class="n">max_abs</span><span class="p">,</span> <span class="n">x_scaled</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">/=</span> <span class="n">max_abs</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">expectation_maximization</span><span class="p">(</span><span class="n">y</span><span class="o">/</span><span class="n">max_abs</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">y</span><span class="o">*</span><span class="n">max_abs</span></div>
 
 
@@ -650,22 +651,14 @@
 
     <span class="n">v_j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_j</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
-    <span class="c1"># compute the covariance of the source</span>
-    <span class="n">C_j</span> <span class="o">=</span> <span class="n">_covariance</span><span class="p">(</span><span class="n">y_j</span><span class="p">)</span>
-
     <span class="c1"># updates the spatial covariance matrix</span>
-    <span class="c1"># this is where there is a potential overflow problem for very long</span>
-    <span class="c1"># files, but we ignore this potential issue and let it to the user.</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">R_j</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">C_j</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span>
-            <span class="p">(</span><span class="n">eps</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v_j</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
-        <span class="p">)</span>
-    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
-              <span class="s1">&#39;There was a problem when computing the spatial covariance &#39;</span>
-              <span class="s1">&#39;matrix. Your mixture is probably too long for this &#39;</span>
-              <span class="s1">&#39;implementation&#39;</span><span class="p">)</span>
+    <span class="n">nb_frames</span> <span class="o">=</span> <span class="n">y_j</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">R_j</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">weight</span> <span class="o">=</span> <span class="n">eps</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_frames</span><span class="p">):</span>
+        <span class="n">R_j</span> <span class="o">+=</span> <span class="n">_covariance</span><span class="p">(</span><span class="n">y_j</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span>
+        <span class="n">weight</span> <span class="o">+=</span> <span class="n">v_j</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">R_j</span> <span class="o">/=</span> <span class="n">weight</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">v_j</span><span class="p">,</span> <span class="n">R_j</span></div>
 </pre></div>
 
