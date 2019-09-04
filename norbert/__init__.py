@@ -261,8 +261,8 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     # we need to refine the estimates. Scales down the estimates for
     # numerical stability
     max_abs = max(1, np.abs(x).max()/10.)
-    x_scaled = x / max_abs
-    y = expectation_maximization(y/max_abs, x_scaled, iterations, eps=eps)[0]
+    x /= max_abs
+    y = expectation_maximization(y/max_abs, x, iterations, eps=eps)[0]
     return y*max_abs
 
 
