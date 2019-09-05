@@ -7,7 +7,7 @@ def _logit(W, threshold, slope):
     return 1. / (1.0 + np.exp(-slope*(W-threshold)))
 
 
-def residual_model(v, x, alpha=1):
+def residual_model(v, x, alpha=1, autoscale=False):
     r"""Compute a model for the residual based on spectral subtraction.
 
     The method consists in two steps:
@@ -31,6 +31,10 @@ def residual_model(v, x, alpha=1):
         exponent for the spectrograms `v`. For instance, if `alpha==1`,
         then `v` must be homogoneous to magnitudes, and if `alpha==2`, `v`
         must homogeneous to squared magnitudes.
+    autoscale: boolean
+        in the case you know that the spectrograms will not have the right
+        magnitude, it is important that the models are scaled so that the
+        residual is correctly estimated.
 
     Returns
     -------
@@ -56,26 +60,24 @@ def residual_model(v, x, alpha=1):
     # compute the total model as provided
     v_total = np.sum(v, axis=-1)
 
-    # quick trick to scale the provided spectrogram to fit the mixture where
-    # the model has significant energy
-    try:
-        gain = (
-            np.sum(vx*v_total, axis=0, keepdims=True) /
-            (eps+np.sum(v_total**2, axis=0, keepdims=True)))
-        v_g = v * gain[..., None]
-    except Exception:
-        print('Automatic scaling for residual model failed. '
-              'This is probably due to a very long file. Trying '
-              'without it.')
-        v_g = v
+    if autoscale:
+        # quick trick to scale the provided spectrograms to fit the mixture
+        nb_frames = x.shape[0]
+        gain = 0
+        weights = eps
+        for t in range(nb_frames):
+            gain = gain + vx[None, t] * v_total[None, t]
+            weights = weights + v_total[None, t]**2
+        gain /= weights
+        v *= gain[..., None]
 
-    # re-sum the sources to build the new current model
-    v_total = np.sum(v, axis=-1)
+        # re-sum the sources to build the new current model
+        v_total = np.sum(v, axis=-1)
 
     # residual is difference between the observation and the model
     vr = np.maximum(0, vx - v_total)
 
-    return np.concatenate((v_g, vr[..., None]), axis=3)
+    return np.concatenate((v, vr[..., None]), axis=3)
 
 
 def smooth(v, width=1, temporal=False):
