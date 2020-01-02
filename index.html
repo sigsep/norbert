@@ -164,7 +164,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#norbert.wiener" title="norbert.wiener"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norbert.wiener</span></code></a>(v, x[, iterations, …])</p></td>
 <td><p>Wiener-based separation for multichannel audio.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#norbert.contrib.residual_model" title="norbert.contrib.residual_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norbert.contrib.residual_model</span></code></a>(v, x[, alpha])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#norbert.contrib.residual_model" title="norbert.contrib.residual_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norbert.contrib.residual_model</span></code></a>(v, x[, …])</p></td>
 <td><p>Compute a model for the residual based on spectral subtraction.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#norbert.softmask" title="norbert.softmask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norbert.softmask</span></code></a>(v, x[, logit, eps])</p></td>
@@ -508,7 +508,7 @@ Conference on Acoustics, Speech and Signal Processing. IEEE, 2013.</p>
 
 <span class="target" id="module-norbert.contrib"></span><dl class="function">
 <dt id="norbert.contrib.residual_model">
-<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">residual_model</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">alpha=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#residual_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.residual_model" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">norbert.contrib.</code><code class="sig-name descname">residual_model</code><span class="sig-paren">(</span><em class="sig-param">v</em>, <em class="sig-param">x</em>, <em class="sig-param">alpha=1</em>, <em class="sig-param">autoscale=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/norbert/contrib.html#residual_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#norbert.contrib.residual_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute a model for the residual based on spectral subtraction.</p>
 <p>The method consists in two steps:</p>
 <ul class="simple">
@@ -528,6 +528,10 @@ input model from the mixture spectrogram, with flooring to 0.</p></li>
 <dt><strong>alpha: float [scalar]</strong></dt><dd><p>exponent for the spectrograms <cite>v</cite>. For instance, if <cite>alpha==1</cite>,
 then <cite>v</cite> must be homogoneous to magnitudes, and if <cite>alpha==2</cite>, <cite>v</cite>
 must homogeneous to squared magnitudes.</p>
+</dd>
+<dt><strong>autoscale: boolean</strong></dt><dd><p>in the case you know that the spectrograms will not have the right
+magnitude, it is important that the models are scaled so that the
+residual is correctly estimated.</p>
 </dd>
 </dl>
 </dd>
