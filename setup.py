@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='norbert',
-    version='0.2.0',
+    version='0.2.1',
     description='Painless Wiener Filters',
     long_description=long_description,
     long_description_content_type='text/markdown',

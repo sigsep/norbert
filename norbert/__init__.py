@@ -127,7 +127,7 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
         print('Number of iterations: ', iterations)
     regularization = np.sqrt(eps) * (
             np.tile(np.eye(nb_channels, dtype=np.complex64),
-                    (nb_frames, nb_bins, 1, 1)))
+                    (1, nb_bins, 1, 1)))
     for it in range(iterations):
         # constructing the mixture covariance matrix. Doing it with a loop
         # to avoid storing anytime in RAM the whole 6D tensor
@@ -140,13 +140,14 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
                 y[..., j],
                 eps)
 
-        Cxx = get_mix_model(v, R)
-        Cxx += regularization
-        inv_Cxx = _invert(Cxx, eps)
-        # separate the sources
-        for j in range(nb_sources):
-            W_j = wiener_gain(v[..., j], R[..., j], inv_Cxx)
-            y[..., j] = apply_filter(x, W_j)
+        for t in range(nb_frames):
+            Cxx = get_mix_model(v[None, t, ...], R)
+            Cxx += regularization
+            inv_Cxx = _invert(Cxx, eps)
+            # separate the sources
+            for j in range(nb_sources):
+                W_j = wiener_gain(v[None, t, ..., j], R[..., j], inv_Cxx)
+                y[t, ..., j] = apply_filter(x[None, t, ...], W_j)[0]
 
     return y, v, R
 
@@ -256,8 +257,8 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     # we need to refine the estimates. Scales down the estimates for
     # numerical stability
     max_abs = max(1, np.abs(x).max()/10.)
-    x_scaled = x / max_abs
-    y = expectation_maximization(y/max_abs, x_scaled, iterations, eps=eps)[0]
+    x /= max_abs
+    y = expectation_maximization(y/max_abs, x, iterations, eps=eps)[0]
     return y*max_abs
 
 
@@ -507,20 +508,12 @@ def get_local_gaussian_model(y_j, eps=1.):
 
     v_j = np.mean(np.abs(y_j)**2, axis=2)
 
-    # compute the covariance of the source
-    C_j = _covariance(y_j)
-
     # updates the spatial covariance matrix
-    # this is where there is a potential overflow problem for very long
-    # files, but we ignore this potential issue and let it to the user.
-    try:
-        R_j = (
-            np.sum(C_j, axis=0) /
-            (eps+np.sum(v_j[..., None, None], axis=0))
-        )
-    except Exception:
-        raise Exception(
-              'There was a problem when computing the spatial covariance '
-              'matrix. Your mixture is probably too long for this '
-              'implementation')
+    nb_frames = y_j.shape[0]
+    R_j = 0
+    weight = eps
+    for t in range(nb_frames):
+        R_j += _covariance(y_j[None, t, ...])
+        weight += v_j[None, t, ...]
+    R_j /= weight[..., None, None]
     return v_j, R_j
