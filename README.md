@@ -23,7 +23,7 @@ From a more expert perspective, you will find the different ingredients from the
 
 ## Usage
 
-Asssuming a complex spectrogram `X`, and a (magnitude) estimate of a target to be extracted from the spectrogram, performing the multichannel wiener filter is as simple as this:
+Asssuming a complex spectrogram `X`, and a (magnitude) estimate of a target `V` to be extracted from the spectrogram, performing the multichannel wiener filter is as simple as this:
 
 ```python
 X = stft(audio)
