@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-import norbert
+import norbert.numpy as norbert
 
 
 @pytest.fixture(params=[8, 11, 33])
