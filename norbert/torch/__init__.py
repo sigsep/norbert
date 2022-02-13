@@ -118,17 +118,11 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
     (batch, nb_frames, nb_bins, nb_channels) = x.shape
     nb_sources = y.shape[-1]
 
-    # allocate the spatial covariance matrices and PSD
-    # R = np.zeros((nb_bins, nb_channels, nb_channels, nb_sources), x.dtype)
-    # v = np.zeros((nb_frames, nb_bins, nb_sources))
-
     if verbose:
         print('Number of iterations: ', iterations)
     regularization = math.sqrt(eps) * torch.eye(nb_channels, dtype=x.dtype,
                                                 device=x.device)
     for it in range(iterations):
-        # constructing the mixture covariance matrix. Doing it with a loop
-        # to avoid storing anytime in RAM the whole 6D tensor
         if verbose:
             print('EM, iteration %d' % (it+1))
 
