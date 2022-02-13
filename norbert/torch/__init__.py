@@ -1,53 +1,13 @@
 import torch
 import math
-from .contrib import compress_filter, residual_model
+from .contrib import compress_filter
 
 
 def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
-    r"""Expectation maximization algorithm, for refining source separation
+    r"""Differentiable expectation maximization algorithm, for refining source separation
     estimates.
 
-    This algorithm allows to make source separation results better by
-    enforcing multichannel consistency for the estimates. This usually means
-    a better perceptual quality in terms of spatial artifacts.
-
-    The implementation follows the details presented in [1]_, taking
-    inspiration from the original EM algorithm proposed in [2]_ and its
-    weighted refinement proposed in [3]_, [4]_.
-    It works by iteratively:
-
-     * Re-estimate source parameters (power spectral densities and spatial
-       covariance matrices) through :func:`get_local_gaussian_model`.
-
-     * Separate again the mixture with the new parameters by first computing
-       the new modelled mixture covariance matrices with :func:`get_mix_model`,
-       prepare the Wiener filters through :func:`wiener_gain` and apply them
-       with :func:`apply_filter``.
-
-    References
-    ----------
-    .. [1] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
-        N. Takahashi and Y. Mitsufuji, "Improving music source separation based
-        on deep neural networks through data augmentation and network
-        blending." 2017 IEEE International Conference on Acoustics, Speech
-        and Signal Processing (ICASSP). IEEE, 2017.
-
-    .. [2] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
-        reverberant audio source separation using a full-rank spatial
-        covariance model." IEEE Transactions on Audio, Speech, and Language
-        Processing 18.7 (2010): 1830-1840.
-
-    .. [3] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel audio source
-        separation with deep neural networks." IEEE/ACM Transactions on Audio,
-        Speech, and Language Processing 24.9 (2016): 1652-1664.
-
-    .. [4] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel music
-        separation with deep neural networks." 2016 24th European Signal
-        Processing Conference (EUSIPCO). IEEE, 2016.
-
-    .. [5] A. Liutkus and R. Badeau and G. Richard "Kernel additive models for
-        source separation." IEEE Transactions on Signal Processing
-        62.16 (2014): 4298-4310.
+    See :func:`norbert.expectation_maximization` for more details.
 
     Parameters
     ----------
@@ -77,38 +37,6 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
 
     R: torch.Tensor [shape=(batch, nb_bins, nb_channels, nb_channels, nb_sources)]
         estimated spatial covariance matrices
-
-
-    Note
-    -----
-        * You need an initial estimate for the sources to apply this
-          algorithm. This is precisely what the :func:`wiener` function does.
-
-        * This algorithm *is not* an implementation of the "exact" EM
-          proposed in [1]_. In particular, it does compute the posterior
-          covariance matrices the same (exact) way. Instead, it uses the
-          simplified approximate scheme initially proposed in [5]_ and further
-          refined in [3]_, [4]_, that boils down to just take the empirical
-          covariance of the recent source estimates, followed by a weighted
-          average for the update of the spatial covariance matrix. It has been
-          empirically demonstrated that this simplified algorithm is more
-          robust for music separation.
-
-    Warning
-    -------
-        It is *very* important to make sure `x.dtype` is `np.complex`
-        if you want double precision, because this function will **not**
-        do such conversion for you from `np.complex64`, in case you want the
-        smaller RAM usage on purpose.
-
-        It is usually always better in terms of quality to have double
-        precision, by e.g. calling :func:`expectation_maximization`
-        with ``x.astype(np.complex)``.
-
-        This is notably needed if you let common deep learning frameworks like
-        PyTorch or TensorFlow do the STFT, because this usually happens in
-        single precision.
-
     """
     # to avoid dividing by zero
     if eps is None:
@@ -141,42 +69,10 @@ def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
 
 
 def wiener(v, x, iterations=1, use_softmask=True, eps=None):
-    """Wiener-based separation for multichannel audio.
+    """Differentiable wiener-based separation for multichannel audio.
 
-    The method uses the (possibly multichannel) spectrograms `v` of the
-    sources to separate the (complex) Short Term Fourier Transform `x` of the
-    mix. Separation is done in a sequential way by:
-
-    * Getting an initial estimate. This can be done in two ways: either by
-      directly using the spectrograms with the mixture phase, or
-      by using :func:`softmask`.
-
-    * Refinining these initial estimates through a call to
-      :func:`expectation_maximization`.
-
-    This implementation also allows to specify the epsilon value used for
-    regularization. It is based on [1]_, [2]_, [3]_, [4]_.
-
-    References
-    ----------
-    .. [1] S. Uhlich and M. Porcu and F. Giron and M. Enenkl and T. Kemp and
-        N. Takahashi and Y. Mitsufuji, "Improving music source separation based
-        on deep neural networks through data augmentation and network
-        blending." 2017 IEEE International Conference on Acoustics, Speech
-        and Signal Processing (ICASSP). IEEE, 2017.
-
-    .. [2] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel audio source
-        separation with deep neural networks." IEEE/ACM Transactions on Audio,
-        Speech, and Language Processing 24.9 (2016): 1652-1664.
-
-    .. [3] A. Nugraha and A. Liutkus and E. Vincent. "Multichannel music
-        separation with deep neural networks." 2016 24th European Signal
-        Processing Conference (EUSIPCO). IEEE, 2016.
-
-    .. [4] A. Liutkus and R. Badeau and G. Richard "Kernel additive models for
-        source separation." IEEE Transactions on Signal Processing
-        62.16 (2014): 4298-4310.
-
+    See :func:`norbert.wiener` for more details.
+    
     Parameters
     ----------
 
@@ -213,26 +109,6 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     y: torch.Tensor
             [complex, shape=(batch, nb_frames, nb_bins, nb_channels, nb_sources)]
         STFT of estimated sources
-
-    Note
-    ----
-
-    * Be careful that you need *magnitude spectrogram estimates* for the
-      case `softmask==False`.
-    * We recommand to use `softmask=False` only if your spectrogram model is
-      pretty good, e.g. when the output of a deep neural net. In the case
-      it is not so great, opt for an initial softmasking strategy.
-    * The epsilon value will have a huge impact on performance. If it's large,
-      only the parts of the signal with a significant energy will be kept in
-      the sources. This epsilon then directly controls the energy of the
-      reconstruction error.
-
-    Warning
-    -------
-    As in :func:`expectation_maximization`, we recommend converting the
-    mixture `x` to double precision `np.complex` *before* calling
-    :func:`wiener`.
-
     """
     if use_softmask:
         y = softmask(v, x)
@@ -251,25 +127,8 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
 
 
 def softmask(v: torch.Tensor, x: torch.Tensor, logit: torch.Tensor = None):
-    """Separates a mixture with a ratio mask, using the provided sources
-    spectrograms estimates. Additionally allows compressing the mask with
-    a logit function for soft binarization.
-    The filter does *not* take multichannel correlations into account.
-
-    The masking strategy can be traced back to the work of N. Wiener in the
-    case of *power* spectrograms [1]_. In the case of *fractional* spectrograms
-    like magnitude, this filter is often referred to a "ratio mask", and
-    has been shown to be the optimal separation procedure under alpha-stable
-    assumptions [2]_.
-
-    References
-    ----------
-    .. [1] N. Wiener,"Extrapolation, Inerpolation, and Smoothing of Stationary
-        Time Series." 1949.
-
-    .. [2] A. Liutkus and R. Badeau. "Generalized Wiener filtering with
-        fractional power spectrograms." 2015 IEEE International Conference on
-        Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2015.
+    """
+    See :func:`norbert.softmask` for more details.
 
     Parameters
     ----------
@@ -342,16 +201,9 @@ def _invert(M: torch.Tensor, eps):
 
 def wiener_gain(v_j: torch.Tensor, R_j: torch.Tensor, inv_Cxx: torch.Tensor):
     """
-    Compute the wiener gain for separating one source, given all parameters.
-    It is the matrix applied to the mix to get the posterior mean of the source
-    as in [1]_
+    Compute the Wiener gain for each source.
+    See :func:`norbert.wiener_gain` for more details.
 
-    References
-    ----------
-    .. [1] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
-        reverberant audio source separation using a full-rank spatial
-        covariance model." IEEE Transactions on Audio, Speech, and Language
-        Processing 18.7 (2010): 1830-1840.
 
     Parameters
     ----------
@@ -380,8 +232,7 @@ def wiener_gain(v_j: torch.Tensor, R_j: torch.Tensor, inv_Cxx: torch.Tensor):
 
 def apply_filter(x: torch.Tensor, W: torch.Tensor):
     """
-    Applies a filter on the mixture. Just corresponds to a matrix
-    multiplication.
+    See :func:`norbert.apply_filter` for more details.
 
     Parameters
     ----------
@@ -405,8 +256,7 @@ def apply_filter(x: torch.Tensor, W: torch.Tensor):
 
 def get_mix_model(v: torch.Tensor, R: torch.Tensor):
     """
-    Compute the model covariance of a mixture based on local Gaussian models.
-    simply adds up all the v[..., j] * R[..., j]
+    See :func:`norbert.get_mix_model` for more details.
 
     Parameters
     ----------
@@ -447,20 +297,7 @@ def _covariance(y_j: torch.Tensor):
 
 def get_local_gaussian_model(y_j: torch.Tensor, eps=1.):
     r"""
-    Compute the local Gaussian model [1]_ for a source given the complex STFT.
-    First get the power spectral densities, and then the spatial covariance
-    matrix, as done in [1]_, [2]_
-
-    References
-    ----------
-    .. [1] N.Q. Duong and E. Vincent and R.Gribonval. "Under-determined
-        reverberant audio source separation using a full-rank spatial
-        covariance model." IEEE Transactions on Audio, Speech, and Language
-        Processing 18.7 (2010): 1830-1840.
-
-    .. [2] A. Liutkus and R. Badeau and G. Richard. "Low bitrate informed
-        source separation of realistic mixtures." 2013 IEEE International
-        Conference on Acoustics, Speech and Signal Processing. IEEE, 2013.
+    See :func:`norbert.get_local_gaussian_model` for more details.
 
     Parameters
     ----------

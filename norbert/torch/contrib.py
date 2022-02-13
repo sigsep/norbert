@@ -10,14 +10,7 @@ def _logit(W, threshold, slope):
 def residual_model(v, x, alpha=1, autoscale=False):
     r"""Compute a model for the residual based on spectral subtraction.
 
-    The method consists in two steps:
-
-    * The provided spectrograms are summed up to obtain the *input* model for
-      the mixture. This *input* model is scaled frequency-wise to best
-      fit with the actual observed mixture spectrogram.
-
-    * The residual model is obtained through spectral subtraction of the
-      input model from the mixture spectrogram, with flooring to 0.
+    See :func:`norbert.residual_model` for details.
 
     Parameters
     ----------
@@ -40,16 +33,6 @@ def residual_model(v, x, alpha=1, autoscale=False):
     -------
     v: torch.Tensor [shape=(batch, nb_frames, nb_bins, nb_channels, nb_sources+1)]
         Spectrograms of the sources, with an appended one for the residual.
-
-    Note
-    ----
-    It is not mandatory to input multichannel spectrograms. However, the
-    output spectrograms *will* be multichannel.
-
-    Warning
-    -------
-    You must be careful to set `alpha` as the exponent that corresponds to `v`.
-    In other words, *you must have*: ``np.abs(x)**alpha`` homogeneous to `v`.
     """
     # to avoid dividing by zero
     eps = torch.finfo(v.dtype).eps
@@ -81,19 +64,7 @@ def reduce_interferences(v, thresh=0.6, slope=15):
     r"""
     Reduction of interferences between spectrograms.
 
-    The objective of the method is to redistribute the energy of the input in
-    order to "sparsify" spectrograms along the "source" dimension. This is
-    motivated by the fact that sources are somewhat sparse and it is hence
-    unlikely that they are all energetic at the same time-frequency bins.
-
-    The method is inspired from [1]_ with ad-hoc modifications.
-
-    References
-    ----------
-
-   .. [1] Thomas Prätzlich, Rachel Bittner, Antoine Liutkus, Meinard Müller.
-           "Kernel additive modeling for interference reduction in multi-
-           channel music recordings" Proc. of ICASSP 2015.
+    See :func:`norbert.reduce_interferences` for details.
 
     Parameters
     ----------
@@ -128,9 +99,8 @@ def compress_filter(W, thresh=0.6, slope=15):
     separation filter. This allows to reduce interferences at the price
     of distortion.
 
-    In the case of multichannel filters, decomposes them as the cascade of a
-    pure beamformer (selection of one direction in space), followed by a
-    single-channel mask. Then, compression is applied on the mask only.
+    See :func:`norbert.compress_filter` for details.
+
 
     Parameters
     ----------
