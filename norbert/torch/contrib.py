@@ -1,7 +1,6 @@
 import torch
 import torch.nn.functional as F
-from scipy.ndimage import gaussian_filter
-from scipy.ndimage.filters import gaussian_filter1d
+from ..numpy.contrib import smooth
 
 
 def _logit(W, threshold, slope):
@@ -76,33 +75,6 @@ def residual_model(v, x, alpha=1, autoscale=False):
 
     return torch.cat((v, vr[..., None]), axis=4)
 
-
-def smooth(v, width=1, temporal=False):
-    """
-    smoothes a ndarray with a Gaussian blur.
-
-    Parameters
-    ----------
-    v: torch.Tensor [shape=(nb_frames, ...)]
-        input array
-
-    sigma: int [scalar]
-        lengthscale of the gaussian blur
-
-    temporal: boolean
-        if True, will smooth only along time through 1d blur. Will use a
-        multidimensional Gaussian blur otherwise.
-
-    Returns
-    -------
-    result: torch.Tensor [shape=(nb_frames, ...)]
-        filtered array
-
-    """
-    if temporal:
-        return gaussian_filter1d(v, sigma=width, axis=0)
-    else:
-        return gaussian_filter(v, sigma=width, truncate=width)
 
 
 def reduce_interferences(v, thresh=0.6, slope=15):
