@@ -41,7 +41,7 @@ def assert_equal(y_np, y_torch):
 
     for n, t in zip(y_np, y_torch):
         assert np.allclose(n, t.squeeze(0).numpy(),
-                           atol=1e-16), np.max(np.abs(n - t.squeeze(0).numpy()))
+                           atol=1e-16)
 
 
 def test_softmask():
@@ -152,5 +152,4 @@ def test_batch_consistency():
     torch_result = norbert_torch.wiener(torch.from_numpy(
         V), torch.from_numpy(X), iterations=nb_iterations, eps=eps)
 
-    print(np_result, torch_result)
     assert_equal(np_result, torch_result)
