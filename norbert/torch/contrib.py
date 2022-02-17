@@ -59,7 +59,6 @@ def residual_model(v, x, alpha=1, autoscale=False):
     return torch.cat((v, vr[..., None]), axis=4)
 
 
-
 def reduce_interferences(v, thresh=0.6, slope=15):
     r"""
     Reduction of interferences between spectrograms.
@@ -86,11 +85,11 @@ def reduce_interferences(v, thresh=0.6, slope=15):
         `v` with reduced interferences
 
     """
-    eps = 1e-7
+    eps = torch.finfo(torch.float32).eps
     vsmooth = smooth(v.detach().cpu().numpy(), 10)
     vsmooth = torch.from_numpy(vsmooth).to(v.device).to(v.dtype)
     total_energy = eps + vsmooth.sum(-1, keepdim=True)
-    v = _logit(vsmooth / total_energy, thresh, slope) * v
+    v = _logit(vsmooth / total_energy, 0.4, 15) * v
     return v
 
 
