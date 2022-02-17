@@ -202,17 +202,17 @@ def _invert(M: torch.Tensor, eps):
 
 def wiener_gain(v_j: torch.Tensor, R_j: torch.Tensor, inv_Cxx: torch.Tensor):
     """
-    Compute the Wiener gain for each source.
+    Compute the Wiener gain for all sources.
     See :func:`norbert.wiener_gain` for more details.
 
 
     Parameters
     ----------
     v_j: torch.Tensor [shape=(batch, nb_frames, nb_bins, nb_sources)]
-        power spectral density of the target source.
+        power spectral density of all sources.
 
     R_j: torch.Tensor [shape=(batch, nb_bins, nb_channels, nb_channels, nb_sources)]
-        spatial covariance matrix of the target source
+        spatial covariance matrix of all sources.
 
     inv_Cxx: torch.Tensor [shape=(batch, nb_frames, nb_bins, nb_channels, nb_channels)]
         inverse of the mixture covariance matrices
@@ -233,6 +233,7 @@ def wiener_gain(v_j: torch.Tensor, R_j: torch.Tensor, inv_Cxx: torch.Tensor):
 
 def apply_filter(x: torch.Tensor, W: torch.Tensor):
     """
+    Applies all source filters on the mixture.
     See :func:`norbert.apply_filter` for more details.
 
     Parameters
@@ -245,7 +246,7 @@ def apply_filter(x: torch.Tensor, W: torch.Tensor):
 
     Returns
     -------
-    y_hat: torch.Tensor [shape=(batch, nb_frames, nb_bins, nb_channels)]
+    y_hat: torch.Tensor [shape=(batch, nb_frames, nb_bins, nb_channels, nb_sources)]
         filtered signal
     """
     W = W.permute(0, 1, 2, 5, 3, 4)
