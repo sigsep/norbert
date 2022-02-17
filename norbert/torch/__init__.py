@@ -126,7 +126,7 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     return y * max_abs
 
 
-def softmask(v: torch.Tensor, x: torch.Tensor, logit: torch.Tensor = None):
+def softmask(v: torch.Tensor, x: torch.Tensor, logit: torch.Tensor = None, eps=None):
     """
     See :func:`norbert.softmask` for more details.
 
@@ -150,7 +150,8 @@ def softmask(v: torch.Tensor, x: torch.Tensor, logit: torch.Tensor = None):
 
     """
     # to avoid dividing by zero
-    eps = torch.finfo(x.dtype).eps
+    if eps is None:
+        eps = torch.finfo(x.dtype).eps
     total_energy = v.sum(-1, keepdim=True)
     mask = v / (eps + total_energy)
     if logit is not None:
