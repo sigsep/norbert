@@ -1,6 +1,6 @@
 import torch
 import math
-from .contrib import compress_filter
+from .contrib import compress_filter, residual_model, reduce_interferences
 
 
 def expectation_maximization(y, x, iterations=2, verbose=0, eps=None):
@@ -72,7 +72,7 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
     """Differentiable wiener-based separation for multichannel audio.
 
     See :func:`norbert.wiener` for more details.
-    
+
     Parameters
     ----------
 
