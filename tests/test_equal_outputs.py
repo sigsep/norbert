@@ -1,4 +1,3 @@
-from typing import Iterable, Tuple
 import numpy as np
 import torch
 import norbert.numpy as norbert_np
@@ -9,7 +8,7 @@ nb_frames = 33
 nb_bins = 33
 nb_channels = 2
 nb_sources = 4
-nb_iterations = 1
+nb_iterations = 3
 eps = 1e-12
 
 
@@ -36,7 +35,7 @@ def add_batch_dim(*args):
 
 
 def assert_equal(y_np, y_torch):
-    if not isinstance(y_np, Tuple):
+    if isinstance(y_np, np.ndarray) and isinstance(y_torch, torch.Tensor):
         y_np, y_torch = (y_np,), (y_torch,)
 
     for n, t in zip(y_np, y_torch):
@@ -94,4 +93,39 @@ def test_get_local_gaussian_model():
 
     np_result = norbert_np.get_local_gaussian_model(V)
     torch_result = norbert_torch.get_local_gaussian_model(*add_batch_dim(V))
+    assert_equal(np_result, torch_result)
+
+
+def test_wiener():
+    X, V = get_X_V()
+
+    np_result = norbert_np.wiener(V, X, iterations=nb_iterations, eps=eps)
+    torch_result = norbert_torch.wiener(
+        *add_batch_dim(V, X), iterations=nb_iterations, eps=eps)
+    assert_equal(np_result, torch_result)
+
+
+def test_residual():
+    X, V = get_X_V()
+
+    np_result = norbert_np.contrib.residual_model(V, X)
+    torch_result = norbert_torch.contrib.residual_model(*add_batch_dim(V, X))
+    assert_equal(np_result, torch_result)
+
+
+def test_reduce_interference():
+    _, V = get_X_V()
+
+    np_result = norbert_np.contrib.reduce_interferences(V)
+    torch_result = norbert_torch.contrib.reduce_interferences(
+        *add_batch_dim(V))
+    assert_equal(np_result, torch_result)
+
+
+def test_compress_filter():
+    W = get_random(8, nb_channels, nb_channels)
+
+    np_result = norbert_np.contrib.compress_filter(W)
+    torch_result = norbert_torch.contrib.compress_filter(
+        *add_batch_dim(W))
     assert_equal(np_result, torch_result)
