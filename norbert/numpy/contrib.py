@@ -180,7 +180,7 @@ def compress_filter(W, thresh=0.6, slope=15):
         Compressed filter
     '''
 
-    eps = np.finfo(W).eps
+    eps = np.finfo(W.dtype).eps
     nb_channels = W.shape[-1]
     if nb_channels > 1:
         gains = np.trace(W, axis1=-2, axis2=-1)
