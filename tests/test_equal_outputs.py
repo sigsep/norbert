@@ -10,6 +10,7 @@ nb_channels = 2
 nb_sources = 4
 nb_iterations = 3
 eps = 1e-12
+batch = 4
 
 
 def get_random(*shape):
@@ -39,7 +40,8 @@ def assert_equal(y_np, y_torch):
         y_np, y_torch = (y_np,), (y_torch,)
 
     for n, t in zip(y_np, y_torch):
-        assert np.allclose(n, t.squeeze(0).numpy(), atol=1e-16)
+        assert np.allclose(n, t.squeeze(0).numpy(),
+                           atol=1e-16), np.max(np.abs(n - t.squeeze(0).numpy()))
 
 
 def test_softmask():
@@ -128,4 +130,27 @@ def test_compress_filter():
     np_result = norbert_np.contrib.compress_filter(W)
     torch_result = norbert_torch.contrib.compress_filter(
         *add_batch_dim(W))
+    assert_equal(np_result, torch_result)
+
+
+def test_batch_consistency():
+    X, V = [], []
+    for b in range(batch):
+        x, v = get_X_V()
+        X.append(x)
+        V.append(v)
+
+    X = np.stack(X, 0)
+    V = np.stack(V, 0)
+
+    np_result = []
+    for b in range(batch):
+        np_result.append(norbert_np.wiener(
+            V[b], X[b], iterations=nb_iterations, eps=eps))
+    np_result = np.stack(np_result)
+
+    torch_result = norbert_torch.wiener(torch.from_numpy(
+        V), torch.from_numpy(X), iterations=nb_iterations, eps=eps)
+
+    print(np_result, torch_result)
     assert_equal(np_result, torch_result)
