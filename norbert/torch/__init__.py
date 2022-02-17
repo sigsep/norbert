@@ -1,5 +1,4 @@
 import torch
-import torch.nn.functional as F
 import math
 from .contrib import compress_filter, residual_model, reduce_interferences
 
@@ -121,10 +120,10 @@ def wiener(v, x, iterations=1, use_softmask=True, eps=None):
 
     # we need to refine the estimates. Scales down the estimates for
     # numerical stability
-    max_abs = F.threshold(x.abs().amax((1, 2, 3), keepdim=True) * 0.1, 1, 1)
+    max_abs = max(1, x.abs().max() * 0.1)
     y = expectation_maximization(
-        y / max_abs.unsqueeze(-1), x / max_abs, iterations, eps=eps)[0]
-    return y * max_abs.unsqueeze(-1)
+        y / max_abs, x / max_abs, iterations, eps=eps)[0]
+    return y * max_abs
 
 
 def softmask(v: torch.Tensor, x: torch.Tensor, logit: torch.Tensor = None, eps=None):
