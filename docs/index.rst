@@ -27,6 +27,11 @@ API documentation
 .. automodule:: norbert.contrib
     :members:
 
+.. automodule:: norbert.torch
+    :members:
+
+.. automodule:: norbert.torch.contrib
+    :members:
 
 
 Indices and tables

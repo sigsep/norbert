@@ -33,7 +33,7 @@ setup(
 
     keywords='wiener filter',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['scipy'],
+    install_requires=['scipy', 'torch'],
 
     extras_require={  # Optional
         'dev': ['check-manifest'],
